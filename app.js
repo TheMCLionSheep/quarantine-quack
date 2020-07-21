@@ -20,659 +20,6 @@ console.log("Server Started.");
 
 var SOCKET_LIST = {};
 
-var Game = function(playerList) {
-  var game = {
-    players: playerList,
-    gamePhase: "notStarted",
-    roundNumber: 0,
-    chains: [],
-    teams: [],
-    host: -1,
-    timeLeft: 0,
-    review: {
-      chainID: 0,
-      linkID: 0
-    }
-  }
-  game.addPlayer = function(player) {
-    game.players[player.id] = player;
-  }
-  game.startGame = function() {
-    if(game.gamePhase == "notStarted") {
-      console.log("Game has started!");
-      game.gamePhase = "prompt";
-      shufflePlayer();
-      for(var i in Player.list) {
-        game.addPlayer(Player.list[i]);
-        var tempSocket = SOCKET_LIST[i];
-        if(tempSocket != null) {
-          tempSocket.emit("saveID", i);
-          tempSocket.emit("gamePhase", "prompt");
-        }
-        Player.updateLobby("red",game.players[i]);
-      }
-
-      Team.fillTeams(this);
-      Chain.createChains(this);
-
-      if(size(game.players) >= 10) {
-        for(pl in game.players) {
-          var tempSocket = SOCKET_LIST[pl];
-          if(tempSocket != null) {
-            for(tm in game.teams[game.players[pl].teamID].players) {
-              tempSocket.emit("addTeamMember", "add", game.players[tm].name);
-            }
-            tempSocket.emit("teamListActive", true);
-          }
-        }
-      }
-    }
-  }
-  game.startNewPhase = function(phaseName) {
-    game.gamePhase = phaseName;
-    if(phaseName == "draw") {
-      for(var i = 0; i < game.chains.length; i++) {
-        game.chains[i].addToChain(new Drawing());
-      }
-      if(size(game.players) >= 10) {
-        switchTimer();
-      }
-    }
-    else if(phaseName == "guess") {
-      for(var i = 0; i < game.chains.length; i++) {
-        game.chains[i].addToChain(new Phrase());
-      }
-    }
-
-    //Set unfinished and new chain
-    for(var i = 0; i < game.teams.length; i++) {
-      game.teams[i].finished = false;
-      game.teams[i].curChain++;
-      if(game.teams[i].curChain >= game.teams.length) {
-        game.teams[i].curChain -= game.teams.length;
-      }
-    }
-
-    //Set new phase for players
-    for(var pl in game.players) {
-      game.players[pl].ready = false;
-      Player.updateTeamList("red", game.players[pl]);
-      var tempSocket = SOCKET_LIST[pl];
-      if(tempSocket != null) {
-        tempSocket.emit("gamePhase",phaseName);
-        if(phaseName == "draw") {
-          tempSocket.emit("showPrompt",game.chains[game.teams[game.players[pl].teamID].curChain].chainLinks[game.roundNumber - 1]);
-          if(size(game.players) >= 10) {
-            tempSocket.emit("teamListActive", true);
-            tempSocket.emit("startTimer", 15);
-          }
-        }
-        else if(phaseName == "guess") {
-          Player.updateTeamList("noDraw", game.players[pl]);
-          tempSocket.emit("showDrawing",game.chains[game.teams[game.players[pl].teamID].curChain].chainLinks[game.roundNumber - 1], "guess");
-          if(size(game.players) >= 10) {
-            tempSocket.emit("teamListActive", true);
-          }
-        }
-        else if(phaseName == "review") {
-          tempSocket.emit("showResult",game.chains[game.teams[game.players[pl].teamID].curChain].chainLinks);
-        }
-      }
-      Player.updateLobby("red",game.players[pl]);
-    }
-  }
-  game.checkFinished = function() {
-    for(var i = 0; i < game.teams.length; i++) {
-      if(!game.teams[i].finished) {
-        return;
-      }
-    }
-    game.finishRound();
-  }
-  game.finishRound = function() {
-    console.log("Round " + game.roundNumber + " finished!");
-    game.roundNumber++;
-    if(game.roundNumber >= game.chains.length) {
-      game.startNewPhase("review");
-    }
-    else if(game.roundNumber > 0 && game.roundNumber%2 == 1) {
-      game.startNewPhase("draw");
-    }
-    else if(game.roundNumber > 0 && game.roundNumber%2 == 0) {
-      game.startNewPhase("guess");
-    }
-  }
-  game.endGame = function() {
-    for(var i in Player.list) {
-      var tempSocket = SOCKET_LIST[i];
-      if(tempSocket != null) {
-        tempSocket.emit("joinGame",false,i,false);
-        tempSocket.emit("restartGame");
-        if(game.host == i) {
-          tempSocket.emit("displayHost","none");
-          tempSocket.emit("displayHost","normal");
-        }
-      }
-      if(game.host == i) {
-        Player.updateLobby("stopHost",Player.list[i]);
-      }
-      Player.updateLobby("blue",Player.list[i]);
-    }
-    lobbyDrawing = new Drawing();
-    curGame = new Game([]);
-  }
-  return game;
-}
-var curGame = new Game([]);
-
-var Chain = function(id) {
-  var chain = {
-    id: id,
-    chainLinks: []
-  }
-  chain.addToChain = function(link) {
-    chain.chainLinks.push(link);
-  }
-  return chain;
-}
-Chain.createChains = function(game) {
-  for(var i = 0; i < game.teams.length; i++) {
-    var newChain = new Chain(i);
-    game.chains.push(newChain);
-    game.teams[i].curChain = i;
-
-    newChain.addToChain(new Phrase());
-  }
-}
-
-var Phrase = function(text = "") {
-  var phrase = {
-    text: text
-  }
-  phrase.updateText = function(string) {
-    phrase.text = string;
-  }
-  return phrase;
-}
-
-var Drawing = function() {
-  var drawing = {
-    lineList: []
-  }
-  return drawing;
-}
-
-var Team = function(id) {
-  var team = {
-    players: {},
-    id: id,
-    curChain: 0,
-    finished: false,
-    drawer: -1
-  }
-  team.addPlayer = function(player) {
-    team.players[player.id] = player;
-  }
-  return team;
-}
-Team.fillTeams = function(game) {
-  var teamAmount;
-  if(size(game.players) <= 9) {
-    teamAmount = size(game.players);
-  }
-  else if(size(game.players) <= 15) {
-    teamAmount = 5;
-  }
-  else if(size(game.players) <= 21) {
-    teamAmount = 7;
-  }
-  else {
-    teamAmount = 9;
-  }
-  var curTeamID = 0;
-
-  //Create teams
-  for(var i = 0; i < teamAmount; i++) {
-    var newTeam = new Team(i);
-    game.teams.push(newTeam);
-  }
-
-  for(var pl in game.players) {
-    game.teams[curTeamID].addPlayer(game.players[pl]);
-    game.players[pl].teamID = curTeamID;
-    curTeamID++;
-    if(curTeamID >= teamAmount) {
-      curTeamID -= teamAmount;
-    }
-  }
-}
-
-var Player = function(id, name, color) {
-  var self = {
-    lastX:250,
-    lastY:250,
-    id: id,
-    painting: false,
-    teamID: 0,
-    name: name,
-    online: true,
-    lobbyColor: color,
-    ready: false
-  }
-  self.updatePosition = function(x, y) {
-    self.lastX = x;
-    self.lastY = y;
-  }
-  Player.list[id] = self;
-  return self;
-}
-Player.list = {};
-Player.onConnect = function(socket, name, returningPlayer = false) {
-  if(returningPlayer) {
-    var player = Player.list[socket.id];
-  }
-  else {
-    var player = Player(socket.id, name, HSLToRGB(Math.floor(Math.random()*360) ,100, Math.floor(Math.random()*60)+20));
-  }
-
-  socket.emit("joinGame",(curGame.host != -1),socket.id,(curGame.gamePhase != "notStarted"));
-  socket.emit("showDrawing", lobbyDrawing, "lobby");
-
-  if(returningPlayer) {
-    player.online = true;
-    Player.loadLobby(socket, true);
-    if(size(curGame.players) >= 10) {
-      for(tm in curGame.teams[player.teamID].players) {
-        socket.emit("addTeamMember", "add", curGame.players[tm].name);
-      }
-    }
-    if(curGame.teams[player.teamID].finished) {
-      socket.emit("gamePhase", "waiting");
-      Player.updateLobby("green", player);
-    }
-    else {
-      Player.updateLobby("red", player);
-      var chainID = curGame.teams[player.teamID].curChain;
-      var curLink = curGame.chains[chainID].chainLinks[curGame.roundNumber];
-      if(curGame.gamePhase == "prompt") {
-        socket.emit("gamePhase", "prompt");
-        socket.emit("changeText", curLink.text, true);
-        if(size(curGame.players) >= 10) {
-          socket.emit("teamListActive", true);
-        }
-      }
-      else if(curGame.gamePhase == "draw") {
-        socket.emit("gamePhase", "draw");
-        socket.emit("showDrawing", curLink, "main");
-        socket.emit("showPrompt",curGame.chains[chainID].chainLinks[curGame.roundNumber - 1]);
-        if(size(curGame.players) >= 10) {
-          socket.emit("teamListActive", true);
-        }
-      }
-      else if(curGame.gamePhase == "guess") {
-        socket.emit("gamePhase", "guess");
-        socket.emit("changeText",curLink.text, false);
-        socket.emit("showDrawing",curGame.chains[chainID].chainLinks[curGame.roundNumber - 1], "guess");
-        if(size(curGame.players) >= 10) {
-          socket.emit("teamListActive", true);
-        }
-      }
-      else if(curGame.gamePhase == "review") {
-        socket.emit("gamePhase", "review");
-        if(curGame.review.linkID == 0 && !(curGame.review.chainID == 0)) {
-          for(var i = 0; i < curGame.chains[curGame.review.chainID].chainLinks.length; i++) {
-            var packet = {
-              link: curGame.chains[curGame.review.chainID-1].chainLinks[i],
-              type: (i % 2 == 0 ? "text" : "drawing"),
-              clear: (i == 0)
-            };
-            socket.emit("reviewLink",packet);
-          }
-        }
-        else {
-          for(var i = 0; i < curGame.review.linkID; i++) {
-            var packet = {
-              link: curGame.chains[curGame.review.chainID].chainLinks[i],
-              type: (i % 2 == 0 ? "text" : "drawing"),
-              clear: (i == 0)
-            };
-            socket.emit("reviewLink",packet);
-          }
-        }
-      }
-    }
-  }
-  else {
-    Player.loadLobby(socket, false);
-    Player.updateLobby("add", player);
-  }
-
-  socket.on("becomeHost", function(become) {
-    if(become) {
-      curGame.host = socket.id;
-      for(var pl in Player.list) {
-        var tempSocket = SOCKET_LIST[pl];
-        if(tempSocket != null) {
-          tempSocket.emit("displayHost","none");
-        }
-      }
-      Player.updateLobby("host",player);
-      socket.emit("displayHost","host");
-    }
-    else {
-      curGame.host = -1;
-      socket.emit("displayHost","none");
-      for(var pl in Player.list) {
-        var tempSocket = SOCKET_LIST[pl];
-        if(tempSocket != null) {
-          tempSocket.emit("displayHost","normal");
-        }
-      }
-      Player.updateLobby("stopHost",player);
-    }
-  })
-
-  socket.on("confirmTeamSubmit", function(type) {
-    if(curGame.gamePhase != "notStarted") {
-      for(tm in curGame.teams[player.teamID].players) {
-        var tempSocket = SOCKET_LIST[tm];
-        if(tempSocket != null) {
-          tempSocket.emit("showPopup",type);
-        }
-      }
-    }
-  })
-
-  socket.on("forceSubmit", function() {
-    if(player.id == curGame.host && curGame.gamePhase != "notStarted") {
-      console.log("Host forced submittions");
-      for(var i = 0; i < curGame.teams.length; i++) {
-        if(curGame.roundNumber % 2 == 0 && curGame.chains[curGame.teams[i].curChain].chainLinks[curGame.roundNumber].text == "") {
-          curGame.chains[curGame.teams[i].curChain].chainLinks[curGame.roundNumber].updateText("Unanswered Prompt");
-        }
-        //Set waiting for team
-        for(var pl in curGame.teams[i].players) {
-          var tempSocket = SOCKET_LIST[pl];
-          if(tempSocket != null) {
-            tempSocket.emit("gamePhase","waiting");
-          }
-          Player.updateLobby("green",curGame.players[pl]);
-        }
-        curGame.teams[i].finished = true;
-      }
-      curGame.checkFinished();
-    }
-  })
-
-  socket.on("linePress", function(event, lobby) {
-    if((curGame.gamePhase == "draw" && (curGame.teams[player.teamID].drawer == -1 || curGame.teams[player.teamID].drawer == player.id)) || lobby) {
-      if(event.state == true) {
-        player.painting = true;
-        player.lastX = event.x;
-        player.lastY = event.y;
-      }
-      else if(event.state == false) {
-        player.painting = false;
-      }
-
-      if(player.painting) {
-        if(lobby) {
-          var line = new Line(player.lastX, player.lastY, event.x, event.y, 10, player.lobbyColor, lobbyDrawing.lineList);
-          player.updatePosition(event.x,event.y);
-        }
-        else {
-          var chainID = curGame.teams[player.teamID].curChain;
-          var line = new Line(player.lastX, player.lastY, event.x, event.y, event.size, event.color, curGame.chains[chainID].chainLinks[curGame.roundNumber].lineList);
-          player.updatePosition(event.x,event.y);
-        }
-
-        if(lobby) {
-          for(var pl in Player.list) {
-            var tempSocket = SOCKET_LIST[pl];
-            if(tempSocket != null) {
-              tempSocket.emit("createLine",line,lobby);
-            }
-          }
-        }
-        else {
-          //Adds line for all sockets in team
-          for(var i in curGame.teams[player.teamID].players) {
-            var tempSocket = SOCKET_LIST[i];
-            if(tempSocket != null) {
-              tempSocket.emit("createLine",line,lobby);
-            }
-          }
-        }
-      }
-    }
-    else {
-      socket.emit("errorSound");
-    }
-  });
-
-  socket.on("textChange", function(text) {
-    if(curGame.gamePhase == "prompt" || curGame.gamePhase == "guess") {
-      var chainID = curGame.teams[player.teamID].curChain;
-      curGame.chains[chainID].chainLinks[curGame.roundNumber].updateText(text);
-
-      //Adds text for all on team
-      for(var i in curGame.teams[player.teamID].players) {
-        var tempSocket = SOCKET_LIST[i];
-        if(tempSocket != null) {
-          tempSocket.emit("changeText",text,(curGame.roundNumber == 0));
-        }
-      }
-    }
-  });
-
-  socket.on("cancelConfirm", function() {
-    console.log(player.name + " cancelled submittion");
-    //Cancel ready for everyone.
-    for(var tm in curGame.teams[player.teamID].players) {
-      curGame.players[tm].ready = false;
-      Player.updateTeamList("red", curGame.players[tm]);
-    }
-  })
-
-  socket.on("promptSubmit", function() {
-    console.log("Prompt Request from " + player.name);
-    if(curGame.gamePhase == "prompt" || curGame.gamePhase == "guess") {
-      player.ready = true;
-      Player.updateTeamList("green", player);
-
-      //Check if everyone ready
-      for(var tm in curGame.teams[player.teamID].players) {
-        if(curGame.players[tm].ready || (!curGame.players[tm].online)) {
-          continue;
-        }
-        return;
-      }
-
-      //Set waiting for team
-      for(var i in curGame.teams[player.teamID].players) {
-        var tempSocket = SOCKET_LIST[i];
-        if(tempSocket != null) {
-          tempSocket.emit("gamePhase","waiting");
-        }
-        Player.updateLobby("green",curGame.players[i]);
-      }
-
-      curGame.teams[player.teamID].finished = true;
-      curGame.checkFinished();
-    }
-  });
-
-  socket.on("drawingSubmit", function() {
-    console.log("Drawing Request from " + player.name);
-    if(curGame.gamePhase == "draw") {
-      player.ready = true;
-      Player.updateTeamList("green", player);
-
-      //Check if everyone ready
-      for(var tm in curGame.teams[player.teamID].players) {
-        if(curGame.players[tm].ready || (!curGame.players[tm].online)) {
-          continue;
-        }
-        return;
-      }
-
-      //Set waiting for team
-      for(var i in curGame.teams[player.teamID].players) {
-        var tempSocket = SOCKET_LIST[i];
-        if(tempSocket != null) {
-          tempSocket.emit("gamePhase","waiting");
-          tempSocket.emit("startTimer", -1);
-        }
-        Player.updateLobby("green",curGame.players[i]);
-      }
-
-      curGame.teams[player.teamID].finished = true;
-      curGame.checkFinished();
-    }
-  });
-
-  socket.on("viewChains", function() {
-    if(curGame.gamePhase == "review") {
-      if(curGame.review.chainID >= curGame.chains.length) {
-        curGame.endGame();
-      }
-      else {
-        var packet = {
-          link: curGame.chains[curGame.review.chainID].chainLinks[curGame.review.linkID],
-          type: (curGame.review.linkID % 2 == 0 ? "text" : "drawing"),
-          clear: (curGame.review.linkID == 0)
-        };
-        curGame.review.linkID++;
-        if(curGame.review.linkID >= curGame.chains[curGame.review.chainID].chainLinks.length) {
-          curGame.review.chainID++;
-          curGame.review.linkID = 0;
-        }
-        for(var i in curGame.players) {
-          var tempSocket = SOCKET_LIST[i];
-          if(tempSocket != null) {
-            tempSocket.emit("reviewLink",packet);
-          }
-        }
-      }
-    }
-  });
-
-  socket.on("startGame", function() {
-    if(size(Player.list) >= 3 && curGame.host == socket.id) {
-      curGame.startGame();
-    }
-    else {
-      socket.emit("startError","There must be at least 3 players!");
-    }
-  });
-}
-Player.loadLobby = function(socket, showSelf) {
-  for(var pl in Player.list) {
-    if(pl != socket.id || showSelf) {
-      var pack = {
-        add: "add",
-        name: Player.list[pl].name
-      };
-      if(Player.list[pl].online) {
-        socket.emit("playerLobby",pack);
-        if(curGame.host == pl) {
-          pack.add = "host";
-          socket.emit("playerLobby",pack);
-        }
-        if(curGame.players[pl] != null) {
-          if(curGame.teams[curGame.players[pl].teamID].finished) {
-            pack.add = "green";
-            socket.emit("playerLobby",pack);
-          }
-          else {
-            pack.add = "red";
-            socket.emit("playerLobby",pack);
-          }
-        }
-      }
-      else {
-        pack.add = "gray";
-        socket.emit("playerLobby",pack);
-      }
-    }
-  }
-}
-Player.updateLobby = function(type, player) {
-  var pack = {
-    add: type,
-    name: player.name
-  };
-  for(var pl in Player.list) {
-    if(type == "remove" && player.id == pl) {
-      continue;
-    }
-    var tempSocket = SOCKET_LIST[pl];
-    if(tempSocket != null) {
-      tempSocket.emit("playerLobby",pack);
-    }
-  }
-}
-Player.updateTeamList = function(type, player) {
-  if(size(curGame.players) >= 10) {
-    for(var tm in curGame.teams[player.teamID].players) {
-      var tempSocket = SOCKET_LIST[tm];
-      if(tempSocket != null) {
-        tempSocket.emit("addTeamMember", type, player.name);
-      }
-    }
-  }
-}
-Player.onDisconnect = function(id) {
-  if(Player.list[id] != null) {
-    console.log(Player.list[id].name + " left the game.");
-    if(curGame.gamePhase == "notStarted") {
-      Player.updateLobby("remove", Player.list[id]);
-      delete Player.list[id];
-      if(curGame.host == id) {
-        curGame.host = -1;
-        for(var pl in Player.list) {
-          var tempSocket = SOCKET_LIST[pl];
-          if(tempSocket != null) {
-            tempSocket.emit("displayHost","normal");
-          }
-        }
-      }
-    }
-    else {
-      if(curGame.host == id) {
-        for(var pl in curGame.players) {
-          if(curGame.players[pl].online && (pl != id)) {
-            curGame.host = pl;
-            var tempSocket = SOCKET_LIST[pl];
-            if(tempSocket != null) {
-              tempSocket.emit("displayHost","none");
-              tempSocket.emit("displayHost","host");
-            }
-            Player.updateLobby("host",curGame.players[pl]);
-            break;
-          }
-        }
-      }
-      Player.updateLobby("stopHost", Player.list[id]);
-      Player.updateLobby("gray", Player.list[id]);
-      curGame.players[id].online = false;
-    }
-  }
-}
-
-var Line = function(startX, startY, endX, endY, radius, color, list) {
-  var line = {
-    startX: startX,
-    startY: startY,
-    endX: endX,
-    endY: endY,
-    radius: radius,
-    color: color
-  }
-  list.push(line);
-  return line;
-}
-
 var io = require("socket.io") (serv,{});
 io.sockets.on("connection", function(socket) {
   socket.on("login", function(savedID) {
@@ -729,6 +76,532 @@ io.sockets.on("connection", function(socket) {
   });
 });
 
+//Classes
+var Game = function(id) {
+  var game = {
+    id: 0,
+    round: 0,
+    phase: 0,
+    playerList: {},
+    vote: null,
+    infectedNum: 0,
+    hostId: 0,
+    win: null
+  }
+  game.startGame = function () {
+    //Create Bots
+    for(var i = size(game.playerList); i < 10; i++) {
+      Player.createBot("Bot" + i);
+    }
+
+    game.round = 1;
+    game.phase = 1;
+    game.infectedNum = Math.round(size(game.playerList) / 5);
+
+    //Make infected
+    game.playerList = shuffleObject(game.playerList);
+    var infectedCounter = 0;
+    for(pl in game.playerList) {
+      if(infectedCounter < game.infectedNum) {
+        console.log(game.playerList[pl].name + " is infected!");
+        game.playerList[pl].infected = true;
+        infectedCounter++;
+      }
+      else {
+        break;
+      }
+    }
+
+    var infectedList = [];
+    for(pl in game.playerList) {
+      if(game.playerList[pl].infected) {
+        infectedList.push(game.playerList[pl].name);
+      }
+    }
+
+    game.playerList = shuffleObject(game.playerList);
+
+    for(pl in game.playerList) {
+      var tempSocket = SOCKET_LIST[pl];
+      if(tempSocket != null) {
+        tempSocket.emit("moveToDay", game.hostId == pl, game.playerList[pl].infected, game.infectedNum);
+        tempSocket.emit("startingPopdown", game.playerList[pl].infected, game.infectedNum);
+        tempSocket.emit("saveID", pl);
+        if(game.playerList[pl].infected) {
+          tempSocket.emit("infectedList", infectedList);
+        }
+      }
+    }
+  }
+  game.confirmQuarantine = function() {
+    game.phase = 2;
+    for(pl in game.playerList) {
+      var tempSocket = SOCKET_LIST[pl];
+      if(tempSocket != null) {
+        tempSocket.emit("voteForClosed");
+      }
+      if(game.playerList[pl].isBot) {
+        game.playerList[pl].agree = game.playerList[pl].getBotVote();
+        console.log(game.playerList[pl].name + " has voted");
+      }
+    }
+  }
+  game.checkVotes = function() {
+    for(pl in game.playerList) {
+      if(game.playerList[pl].agree === null) {
+        return;
+      }
+    }
+
+    //All players have voted
+    var agreeList = [];
+    var disagreeList = [];
+    for(pl in game.playerList) {
+      if(game.playerList[pl].agree) {
+        agreeList.push(game.playerList[pl].name);
+      }
+      else{
+        disagreeList.push(game.playerList[pl].name);
+      }
+    }
+    game.vote = ( disagreeList.length < agreeList.length );
+
+    for(pl in game.playerList) {
+      var tempSocket = SOCKET_LIST[pl];
+      if(tempSocket != null) {
+        tempSocket.emit("voteResults", agreeList, disagreeList, game.hostId == pl, game.vote);
+      }
+    }
+  }
+  game.passLeadership = function() {
+    game.phase = 1;
+    game.resetRound();
+    Player.updateLobby("stopHost", game.playerList[game.hostId]);
+    game.hostId = game.findNextLeader();
+    Player.updateLobby("host", game.playerList[game.hostId]);
+
+    for(pl in game.playerList) {
+      var tempSocket = SOCKET_LIST[pl];
+      if(tempSocket != null) {
+        tempSocket.emit("retryDay", pl == game.hostId);
+      }
+    }
+  }
+  game.resetRound = function() {
+    game.vote = null;
+    for(pl in game.playerList) {
+      game.playerList[pl].agree = null;
+      Player.updateLobby("noVote", game.playerList[pl]);
+      if(game.playerList[pl].closed) {
+        game.playerList[pl].closed = null;
+        Player.updateLobby("moveToOpen", game.playerList[pl]);
+      }
+    }
+  }
+  game.findNextLeader = function() {
+    var foundHost = false;
+    for(pl in game.playerList) {
+      if(foundHost && !game.playerList[pl].isBot) {
+        console.log(game.playerList[pl].name + " is host");
+        return pl;
+      }
+      if(pl == game.hostId) {
+        foundHost = true;
+      }
+    }
+
+    for(pl in game.playerList) {
+      if(!game.playerList[pl].isBot) {
+        console.log(game.playerList[pl].name + " is host");
+        return pl;
+      }
+    }
+  }
+  game.moveToNight = function() {
+    game.phase = 3;
+    var checkQuarantine = true;
+    for(pl in game.playerList) {
+      if((game.playerList[pl].infected && !game.playerList[pl].closed) || (!game.playerList[pl].infected && game.playerList[pl].closed)) {
+        checkQuarantine = false;
+      }
+    }
+    if(checkQuarantine) {
+      game.win = "healthy";
+    }
+    for(pl in game.playerList) {
+      var tempSocket = SOCKET_LIST[pl];
+      if(tempSocket != null) {
+        tempSocket.emit("nightPhase", game.playerList[pl].infected);
+      }
+      if(game.playerList[pl].isBot) {
+        game.playerList[pl].toInfect = game.playerList[pl].getBotInfect();
+      }
+    }
+    game.checkNightFinished();
+  }
+  game.checkNightFinished = function() {
+    for(pl in game.playerList) {
+      if(game.playerList[pl].infected && game.playerList[pl].toInfect === null) {
+        return;
+      }
+    }
+
+    //All infected have chosen
+    game.moveToDay();
+  }
+  game.infectAttempt = function() {
+    var infectedAdded = 0;
+    var infectClosed = 0;
+    for(pl in game.playerList) {
+      if(game.playerList[pl].infected === true) {
+        //In Quarrantine
+        if(game.playerList[pl].closed) {
+          var infectRate = 0.5;
+          infectClosed++;
+        }
+        //In Open
+        else {
+          var infectRate = 0.25;
+        }
+
+        console.log(game.playerList[pl].toInfect);
+
+        if(game.playerList[pl].toInfect && Math.random() < infectRate) {
+          var infectedPlayer = Player.findPlayerId(game.playerList[pl].toInfect);
+          if(infectedPlayer.infected === false) {
+            infectedPlayer.infected = "new";
+            console.log(infectedPlayer.name + " is infected");
+            infectedAdded++;
+            game.infectedNum++;
+          }
+        }
+      }
+      game.playerList[pl].toInfect = null;
+    }
+    return [infectedAdded,infectClosed];
+  }
+  game.moveToDay = function() {
+    var infectResult = game.infectAttempt();
+    game.round++;
+    game.phase = 1;
+    game.resetRound();
+    Player.updateLobby("stopHost", game.playerList[game.hostId]);
+    game.hostId = game.findNextLeader();
+    Player.updateLobby("host", game.playerList[game.hostId]);
+    if(2*game.infectedNum >= size(game.playerList)) {
+      //Win state for infected
+      game.win = "infect";
+    }
+    var infectedList = [];
+    for(pl in game.playerList) {
+      if(game.playerList[pl].infected) {
+        infectedList.push(game.playerList[pl].name);
+      }
+    }
+
+    for(pl in game.playerList) {
+      var tempSocket = SOCKET_LIST[pl];
+      if(tempSocket != null) {
+        tempSocket.emit("moveToDay", game.hostId == pl, game.playerList[pl].infected, game.infectedNum);
+        tempSocket.emit("nightResults", infectResult[0], infectResult[1], game.playerList[pl].infected == "new", game.win);
+        if(game.playerList[pl].infected == "new") {
+          game.playerList[pl].infected = true;
+        }
+        if(game.playerList[pl].infected) {
+          tempSocket.emit("infectedList", infectedList);
+        }
+      }
+    }
+  }
+  Game.list[id] = game;
+  return game;
+}
+Game.list = {};
+new Game(1);
+
+var Player = function(id, name, bot = false) {
+  var self = {
+    x:250,
+    y:250,
+    id: id,
+    name: name,
+    online: true,
+    infected: false,
+    closed: false,
+    agree: null,
+    toInfect: null,
+    gameId: 1,
+    isBot: bot
+  }
+  self.getBotVote = function() {
+    return (Math.random() < 0.8 ? true : false);
+  }
+  self.getBotInfect = function() {
+    var curGame = Game.list[self.gameId];
+    var potentialList = []
+    for(pl in curGame.playerList) {
+      if(curGame.playerList[pl].closed == self.closed && !curGame.playerList[pl].infected) {
+        potentialList.push(curGame.playerList[pl].name);
+      }
+    }
+    if(potentialList.length == 0) {
+      return false;
+    }
+    else {
+      return potentialList[(potentialList.length * Math.random() << 0)];
+    }
+  }
+  Player.list[id] = self;
+  Game.list[self.gameId].playerList[id] = self;
+  return self;
+}
+Player.list = {};
+Player.onConnect = function(socket, name, returningPlayer = false) {
+  //Creating player
+  if(returningPlayer) {
+    var player = Player.list[socket.id];
+  }
+  else {
+    var player = Player(socket.id, name);
+  }
+  var curGame = Game.list[player.gameId];
+
+  socket.emit("joinGame", curGame.hostId != 0, curGame.round != 0);
+
+  //Loading lobby
+  if(returningPlayer) {
+    player.online = true;
+    player.isBot = false;
+    Player.loadLobby(socket, true);
+    Player.rejoinLoad(socket);
+  }
+  else {
+    Player.loadLobby(socket, false);
+    Player.updateLobby("add", player);
+  }
+
+  //Sockets
+  socket.on("updateLobby", function(actionType, name) {
+    if(actionType == "moveToClosed" || actionType == "moveToOpen") {
+      if(curGame.round != 0 && curGame.hostId == player.id && curGame.phase == 1) {
+        var pl = Player.findPlayerId(name);
+        pl.closed = (actionType == "moveToClosed" ? true : false);
+        Player.updateLobby(actionType, pl);
+      }
+    }
+  });
+
+  socket.on("becomeHost", function(become) {
+    if(curGame.hostId == 0 && become) {
+      curGame.hostId = player.id;
+      Player.updateLobby("host", player, true);
+      socket.emit("becomeHost", true);
+    }
+    else if(curGame.hostId == player.id && !become) {
+      curGame.hostId = 0;
+      Player.updateLobby("stopHost", player, true);
+      socket.emit("becomeHost", false);
+    }
+  });
+
+  socket.on("startGame", function() {
+    if(curGame.hostId == player.id) {
+      curGame.startGame();
+    }
+  });
+
+  //Day
+  socket.on("confirmQuarantine", function() {
+    if(curGame.hostId == player.id && curGame.phase == 1) {
+      socket.emit("removeHostDay");
+      curGame.confirmQuarantine();
+    }
+  });
+
+  socket.on("voteDecision", function(decision) {
+    if(curGame.phase == 2 && player.agree === null) {
+      player.agree = decision;
+      console.log(player.name + " has voted");
+      socket.emit("finishedVoting");
+      curGame.checkVotes();
+    }
+  });
+
+  socket.on("moveToNight", function() {
+    if(curGame.hostId == player.id && curGame.phase == 2 && curGame.vote == true) {
+      socket.emit("removeHostVote");
+      curGame.moveToNight();
+    }
+  });
+  socket.on("passLeadership", function() {
+    if(curGame.hostId == player.id && curGame.phase == 2 && curGame.vote == false) {
+      socket.emit("removeHostVote");
+      curGame.passLeadership();
+    }
+  });
+
+  //Night
+  socket.on("infectPlayer", function(name) {
+    if(curGame.phase == 3 && player.infected) {
+      if(!name || (name != player.name && Player.findPlayerId(name).closed == player.closed)) {
+        console.log("Infecting " + name);
+        player.toInfect = name;
+        socket.emit("hideInfect");
+        curGame.checkNightFinished();
+      }
+    }
+  });
+
+  //End game
+  socket.on("requestInfected", function() {
+    if(player.infected || curGame.win != null) {
+      var infectedList = [];
+      for(pl in curGame.playerList) {
+        if(curGame.playerList[pl].infected) {
+          infectedList.push(curGame.playerList[pl].name);
+        }
+      }
+      socket.emit("infectedList", infectedList);
+    }
+  });
+
+  socket.on("endGameButton", function() {
+    if(player.id == curGame.hostId && curGame.win != null) {
+      socket.emit("endGame");
+    }
+  })
+
+  socket.on("endGame", function() {
+    die;
+  });
+}
+Player.findPlayerId = function(name) {
+  for(pl in Player.list) {
+    if( Player.list[pl].name == name) {
+      return Player.list[pl];
+    }
+  }
+  return null;
+}
+Player.createBot = function(name) {
+  var player = Player(Math.random(), name, true);
+  Player.updateLobby("add", player);
+}
+Player.loadLobby = function(socket, showSelf) {
+  for(var pl in Player.list) {
+    if(pl != socket.id || showSelf) {
+      var pack = {
+        type: "add",
+        name: Player.list[pl].name
+      };
+      if(Player.list[pl].online || true) {
+        socket.emit("playerLobby",pack);
+        var curGame = Game.list[Player.list[pl].gameId];
+        if(curGame.hostId == pl) {
+          pack.type = "host";
+          socket.emit("playerLobby",pack);
+        }
+        if(curGame.playerList[pl].closed) {
+          pack.type = "moveToClosed";
+          socket.emit("playerLobby",pack);
+        }
+        if(curGame.playerList[socket.id].infected && curGame.playerList[pl].infected) {
+          pack.type = "infected";
+          socket.emit("playerLobby",pack);
+        }
+        if(curGame.phase == 2 && curGame.vote != null) {
+          if(curGame.playerList[pl].agree === true) {
+            pack.type = "voteAgree";
+          }
+          else if(curGame.playerList[pl].agree === false) {
+            pack.type = "voteDisagree";
+          }
+          else {
+            pack.type = "noVote";
+          }
+          socket.emit("playerLobby",pack);
+        }
+      }
+      else {
+        pack.type = "gray";
+        socket.emit("playerLobby",pack);
+      }
+    }
+  }
+}
+Player.updateLobby = function(type, player, isHost) {
+  var pack = {
+    type: type,
+    name: player.name
+  };
+  for(var pl in Player.list) {
+    if(type == "remove" && player.id == pl) {
+      continue;
+    }
+    var tempSocket = SOCKET_LIST[pl];
+    if(tempSocket != null) {
+      tempSocket.emit("playerLobby",pack);
+      if(isHost) {
+        tempSocket.emit("updateHost",pack);
+      }
+    }
+  }
+}
+Player.rejoinLoad = function(socket) {
+  var curGame = Game.list[Player.list[socket.id].gameId];
+  var player = curGame.playerList[socket.id];
+  socket.emit("moveToDay",curGame.hostId == player.id, player.infected, curGame.infectedNum);
+  if(curGame.phase == 2) {
+    if(curGame.hostId == player.id) {
+      socket.emit("removeHostDay");
+    }
+    if(player.agree === null) {
+      socket.emit("voteForClosed");
+    }
+    if(curGame.vote != null) {
+      var agreeList = [];
+      var disagreeList = [];
+      for(pl in curGame.playerList) {
+        if(curGame.playerList[pl].agree) {
+          agreeList.push(curGame.playerList[pl].name);
+        }
+        else{
+          disagreeList.push(curGame.playerList[pl].name);
+        }
+      }
+      socket.emit("voteResults", agreeList, disagreeList, curGame.hostId == player.id, curGame.vote);
+    }
+  }
+  else if(curGame.phase == 3) {
+    if(curGame.hostId == player.id) {
+      socket.emit("removeHostDay");
+    }
+    socket.emit("nightPhase", player.infected);
+    if(player.toInfect !== null) {
+      socket.emit("hideInfect");
+    }
+  }
+}
+Player.onDisconnect = function(socketId) {
+  if(Player.list[socketId] != null) {
+    console.log(Player.list[socketId].name + " left the game.");
+    var curGame = Game.list[Player.list[socketId].gameId];
+    if(curGame.round == 0) {
+      Player.updateLobby("remove", Player.list[socketId]);
+      if(curGame.hostId == socketId) {
+        curGame.hostId = 0;
+        Player.updateLobby("stopHost", Player.list[socketId].name, true);
+      }
+      delete curGame.playerList[socketId];
+      delete Player.list[socketId];
+    }
+    else {
+      Player.list[socketId].online = false;
+      Player.list[socketId].isBot = true;
+    }
+  }
+}
+
 function size(obj) {
   var size = 0;
   for(var key in obj) {
@@ -737,91 +610,19 @@ function size(obj) {
   return size;
 }
 
-function HSLToRGB(h,s,l) {
-  // Must be fractions of 1
-  s /= 100;
-  l /= 100;
-
-  let c = (1 - Math.abs(2 * l - 1)) * s,
-      x = c * (1 - Math.abs((h / 60) % 2 - 1)),
-      m = l - c/2,
-      r = 0,
-      g = 0,
-      b = 0;
-
-  if (0 <= h && h < 60) {
-    r = c; g = x; b = 0;
-  } else if (60 <= h && h < 120) {
-    r = x; g = c; b = 0;
-  } else if (120 <= h && h < 180) {
-    r = 0; g = c; b = x;
-  } else if (180 <= h && h < 240) {
-    r = 0; g = x; b = c;
-  } else if (240 <= h && h < 300) {
-    r = x; g = 0; b = c;
-  } else if (300 <= h && h < 360) {
-    r = c; g = 0; b = x;
-  }
-  r = Math.round((r + m) * 255);
-  g = Math.round((g + m) * 255);
-  b = Math.round((b + m) * 255);
-
-  return "rgb(" + r + "," + g + "," + b + ")";
-}
-
-var lobbyDrawing = new Drawing();
-
-function switchTimer() {
-  if(curGame.gamePhase == "draw") {
-    //For each team assign new drawer
-    for(var i = 0; i < curGame.teams.length; i++) {
-      var drawerPassed = false;
-      var drawerAssign = false;
-      for(var pl in curGame.teams[i].players) {
-        var tempSocket = SOCKET_LIST[pl];
-        if(tempSocket != null) {
-          tempSocket.emit("startTimer", 15);
-        }
-        if(drawerPassed) {
-          curGame.teams[i].drawer = pl;
-          drawerAssign = true;
-          Player.updateTeamList("draw", curGame.players[pl]);
-          break;
-        }
-        if(pl == curGame.teams[i].drawer) {
-          drawerPassed = true;
-          Player.updateTeamList("noDraw", curGame.players[pl]);
-        }
-      }
-      if(!drawerAssign) {
-        for(var pl in curGame.teams[i].players) {
-          curGame.teams[i].drawer = pl;
-          Player.updateTeamList("draw", curGame.players[pl]);
-          break;
-        }
-      }
-    }
-    setTimeout(switchTimer, 15000);
-  }
-}
-
-function shufflePlayer() {
-  var playerArray = Object.entries(Player.list);
-  playerArray = shuffle(playerArray);
-  Player.list = Object.fromEntries(playerArray);
+function shuffleObject(object) {
+  var array = Object.entries(object);
+  array = shuffle(array);
+  return Object.fromEntries(array);
 }
 
 function shuffle(a) {
-    var j, x, i;
-    for (i = a.length - 1; i > 0; i--) {
-        j = Math.floor(Math.random() * (i + 1));
-        x = a[i];
-        a[i] = a[j];
-        a[j] = x;
-    }
-    return a;
+  var j, x, i;
+  for (i = a.length - 1; i > 0; i--) {
+    j = Math.floor(Math.random() * (i + 1));
+    x = a[i];
+    a[i] = a[j];
+    a[j] = x;
+  }
+  return a;
 }
-
-// setInterval(function() {
-//
-// },1000);

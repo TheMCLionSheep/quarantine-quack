@@ -5,899 +5,114 @@
     <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
     <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
     <meta name="HandheldFriendly" content="true">
-    <title>SketchChain</title>
+    <title>Quarantine Game</title>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.3.0/socket.io.js"></script>
 
     <link rel="stylesheet" href="/client/css/main.css">
+    <script type="text/javascript" src="/client/js/main.js"></script>
+
+    <link href="https://fonts.googleapis.com/css2?family=Architects+Daughter&family=Permanent+Marker&display=swap" rel="stylesheet">
 
     <link rel="shortcut icon" type="image/png" href="/client/images/favicon.png"/>
   </head>
-  <body>
-    <button id="mute-button" class="active" onclick="muteMusic()"></button>
-    <div id="scrim" class="scrim" onclick="hidePopup(true)"></div>
-    <div id="rejoin-scrim" class="scrim"></div>
-    <article id="content">
-      <div id="confirm-popup" class="popup">
-        <h1>Confirm Submit</h1>
-        <p>*Are you ready to submit?</p>
-        <button id="confirm-button" onclick="confirmSubmit()">Confirm</button>
+  <body onload="loadGame()">
+    <div id="scrim" class="scrim"></div>
+
+    <div class="popdown" id="basic-popdown">
+      <h1>Title</h1>
+      <p></p>
+      <button onclick="" class="wooden-button">Continue</button>
+    </div>
+
+    <section id="sign-in" class="active">
+      <div class="container prompt-input">
+        <p>Enter your name:</p>
+        <input maxlength="10" type="text" placeholder="Type here" id="sign-in__input">
+        <p class="error-text" id="sign-in__error"></p>
       </div>
+      <button id="sign-in__button" onclick="joinGame()">Join Game!</button>
+    </section>
 
-      <div id="disconnect" class="popup">
-        <h1>Sorry you disconnected!</h1>
-        <p>Please reload...</p>
-        <button onclick="location.reload()">Reload</button>
+    <section id="rejoin">
+      <div class="popdown">
+        <h1>Old player detected!</h1>
+        <button onclick="rejoinGame();" class="wooden-button">Rejoin</button>
+        <button onclick="newPlayer();" class="wooden-button">New Player</button>
       </div>
+    </section>
 
-      <div id="rejoin" class="popup">
-        <h1>Welcome back!</h1>
-        <p>Old player detected...</p>
-        <button onclick="rejoinGame()">Rejoin</button>
-        <button onclick="newPlayer()">New Player</button>
-        <!-- <button onclick="rejoinScrim.classList.remove('active');
-        rejoinSection.classList.remove('active');
-        socket.emit('login',null);">Dev</button> -->
+    <section id="disconnect">
+      <div class="popdown">
+        <h1>Uh oh, you've disconnected!</h1>
+        <button onclick="location.reload();" class="wooden-button">Reload</button>
       </div>
+    </section>
 
-      <section id="sign-in" class="active">
-        <div class="container prompt-input">
-          <p>Enter your name:</p>
-          <input maxlength="10" type="text" placeholder="Type here" id="name-input">
-          <p class="error-text" id="error-name"></p>
+    <section id="header">
+      <div id="header__container" class="container">
+        <h1>HEALTHY</h1>
+        <h2>0</h2>
+      </div>
+    </section>
+
+    <section id="lobby">
+      <!-- <canvas id="canvas" width="600" height="300"></canvas> -->
+      <div id="lobby__open-list" class="player-list container"></div>
+      <div id="lobby__closed-list" class="player-list container">
+        <h2>Quarantine</h2>
+      </div>
+    </section>
+
+    <section id="vote">
+      <div id="vote__poll" class="container">
+        <button onclick="socket.emit('voteDecision',true)">Agree</button>
+        <button onclick="socket.emit('voteDecision',false)">Disagree</button>
+      </div>
+      <div id="vote__results" class="container">
+        <h1 id="vote__results__info">Do you agree with this group?</h1>
+        <div id="vote__results--agree">
+          <h1>Agree</h1>
+          <h2></h2>
         </div>
-        <button id="join-button" onclick="joinGame()">Join Game!</button>
-        <div class="container" id="credits">
-          <h1>Credits</h1>
-          <p>Created by Gabe</p>
-          <p>Thanks to Rachel, Matt, Aidan, Tyler and Logan for testing!</p>
-          <p>Music by Eric Matyas www.soundimage.org</p>
-          <p class="last">Sound Effects from Eric Matyas, Kenney.nl, zapsplat.com</p>
-          <p>Favicon by Aidan</p>
+        <div id="vote__results--disagree">
+          <h1>Disagree</h1>
+          <h2></h2>
         </div>
-      </section>
-
-      <section id="team-section">
-        <div class="container list" id="team-list">
-          <h1>Team:</h1>
-          <h2 id="timer">0:15</h2>
-        </div>
-      </section>
-
-      <section id="waiting-phase">
-        <div class="container">
-          <p id="waiting__info">Waiting for host to start...</p>
-          <p class="error-text" id="error-list"></p>
-        </div>
-        <div class="container list" id="player-list">
-          <h1>Players:</h1>
-        </div>
-        <div class="container canvas-container">
-          <canvas id="lobby-canvas" width="500" height="500"></canvas>
-        </div>
-        <button id="force-btn" class="toggle-btn" onclick="showPopup('force')">Force Submit</button>
-      </section>
-
-      <section id="pre-game">
-        <button onclick="becomeHost(true)" id="host-btn" class="toggle-btn">Become Host</button>
-        <button onclick="becomeHost(false)" id="stop-host-btn" class="toggle-btn">Stop Hosting</button>
-        <button onclick="startGame()" id="start-btn" class="toggle-btn">Start Game</button>
-      </section>
-
-      <section id="prompt-phase">
-        <div class="container prompt-input">
-          <p>Enter any phrase:</p>
-          <textarea rows="4" placeholder="Write here" value="" id="prompt-area"></textarea>
-          <p class="error-text" id="error-prompt"></p>
-        </div>
-        <button id="prompt-button" onclick="confirmTeamSubmit('phrase');">Submit Phrase</button>
-      </section>
-
-      <section id="draw-phase">
-        <div class="container">
-          <p id="draw-prompt-text">Draw: </p>
-        </div>
-        <div class="container canvas-container">
-          <canvas id="drawing-canvas" width="500" height="500"></canvas>
-        </div>
-        <div class="slidecontainer">
-          <input type="range" min="0" max="359" value="0" class="slider" id="color-slider">
-        </div>
-        <div class="slidecontainer">
-          <input type="range" min="0" max="100" value="50" class="slider" id="darkness-slider">
-        </div>
-        <div class="size-buttons container">
-          <button id="size-5" class="size-buttons__spacer" onclick="changeSize(5)">
-            <span></span>
-          </button>
-          <button id="size-10" class="size-buttons__spacer active" style="border-color:rgb(255,0,0)" onclick="changeSize(10)">
-            <span></span>
-          </button>
-          <button id="size-15" class="size-buttons__spacer" onclick="changeSize(15)">
-            <span></span>
-          </button>
-          <button id="size-20" class="size-buttons__spacer" onclick="changeSize(20)">
-            <span></span>
-          </button>
-          <button id="size-25" class="size-buttons__spacer" onclick="changeSize(25)">
-            <span></span>
-          </button>
-          <button id="size-1000" class="size-buttons__spacer fill-bucket" onclick="changeSize(1000)">
-            <img src="/client/images/fill.png" alt="Fill">
-          </button>
-        </div>
-        <!-- <button onclick="clearCanvas()" id="clear-btn">Clear Canvas</button> -->
-        <button id="draw-button" onclick="confirmTeamSubmit('drawing');">Submit Drawing</button>
-      </section>
-
-      <section id="guess-phase">
-        <div class="container prompt-input">
-          <p>Enter your guess:</p>
-          <textarea id="guess-area" placeholder="Write here" rows="4" value="Hel"></textarea>
-          <p class="error-text" id="error-guess"></p>
-        </div>
-        <div class="container canvas-container">
-          <canvas id="guess-canvas" width="500" height="500"></canvas>
-        </div>
-        <button id="guess-button" onclick="confirmTeamSubmit('guess');">Submit Guess</button>
-      </section>
-
-      <section id="review-phase">
-        <div id="review-display"></div>
-        <button id="review-button" class="toggle-btn" onclick="viewChains()">Next Link</button>
-      </section>
-    </article>
-    <script>
-      var muteButton = document.querySelector("#mute-button");
-      var disconnectSection = document.querySelector("#disconnect");
-      var rejoinSection = document.querySelector("#rejoin");
-      var rejoinScrim = document.querySelector("#rejoin-scrim");
-      var signInSection = document.querySelector("#sign-in");
-      var hostBtn = document.querySelector("#host-btn");
-      var quitHostBtn = document.querySelector("#stop-host-btn");
-      var forceBtn = document.querySelector("#force-btn");
-      var nameInput = document.querySelector("#name-input");
-      var errorName = document.querySelector("#error-name");
-      var errorList = document.querySelector("#error-list");
-      var joinBtn = document.querySelector("#join-button");
-      var preGameSection = document.querySelector("#pre-game");
-      var playerList = document.querySelector("#player-list");
-      var teamList = document.querySelector("#team-list");
-      var teamSection = document.querySelector("#team-section");
-      var timer = document.querySelector("#timer");
-      var canvas = document.querySelector("#drawing-canvas");
-      var ctx = canvas.getContext("2d");
-      var guessCanvas = document.querySelector("#guess-canvas");
-      var guessCtx = guessCanvas.getContext("2d");
-      var lobbyCanvas = document.querySelector("#lobby-canvas");
-      var lobbyCtx = lobbyCanvas.getContext("2d");
-      var waitingInfo = document.querySelector("#waiting__info");
-      var waitSection = document.querySelector("#waiting-phase");
-      var promptSection = document.querySelector("#prompt-phase");
-      var promptArea = document.querySelector("#prompt-area");
-      var promptBtn = document.querySelector("#prompt-button");
-      var drawSection = document.querySelector("#draw-phase");
-      var drawPrompt = document.querySelector("#draw-prompt-text");
-      var drawBtn = document.querySelector("#draw-button");
-      var guessSection = document.querySelector("#guess-phase");
-      var guessArea = document.querySelector("#guess-area");
-      var guessBtn = document.querySelector("#guess-button");
-      var reviewSection = document.querySelector("#review-phase");
-      var reviewDisplay = document.querySelector("#review-display");
-      var reviewButton = document.querySelector("#review-button");
-      var popup = document.querySelector("#confirm-popup");
-      var popupBtn = document.querySelector("#confirm-button");
-      var scrim = document.querySelector("#scrim");
-      var startBtn = document.querySelector("#start-btn");
-
-      var curButton = joinBtn;
-      var secLeft = -1;
-
-      //Load audio
-      var chime = new Audio();
-      chime.src = "/client/audio/chime.mp3";
-      chime.volume = 0.2;
-      var drawChime = new Audio();
-      drawChime.src = "/client/audio/draw.mp3";
-      drawChime.volume = 0.2;
-      var errorSound = new Audio();
-      errorSound.src = "/client/audio/error.ogg";
-      errorSound.volume = 0.3;
-      var alertSound = new Audio();
-      alertSound.src = "/client/audio/alert.mp3";
-      alertSound.volume = 0.2;
-      var lobbyMusic = new Audio();
-      lobbyMusic.src = "/client/audio/Pixel-Puppies.mp3";
-      lobbyMusic.volume = 0.3;
-      var gameMusic = new Audio();
-      gameMusic.src = "/client/audio/Arcade-Stories_Looping.mp3";
-      gameMusic.volume = 0.3;
-
-      var lastConnection = new Date().getTime();
-
-      const socket = io();
-
-      socket.on("connect",function(){
-        socket.emit("login",localStorage.getItem("playerID"));
-      });
-
-      socket.on("disconnect", function() {
-        scrim.classList.add("active");
-        disconnectSection.classList.add("active");
-      });
-
-      socket.on("rejoinPopup", function() {
-        rejoinScrim.classList.add("active");
-        rejoinSection.classList.add("active");
-      })
-
-      socket.on("signInReject", function(reason) {
-        errorName.innerHTML = reason;
-        errorName.classList.add("active");
-        errorSound.play();
-      });
-
-      socket.on("startError", function(reason) {
-        errorList.innerHTML = reason;
-        errorList.classList.add("active");
-        errorSound.play();
-      })
-
-      socket.on("joinGame", function(host, id, started) {
-        lobbyMusic.play();
-        lobbyMusic.addEventListener("ended", function() {
-          lobbyMusic.play();
-        });
-        gameMusic.pause();
-        gameMusic.addEventListener("ended", function() {
-          gameMusic.play();
-        });
-
-        signInSection.classList.remove("active");
-        reviewSection.classList.remove("active");
-        waitSection.classList.add("active");
-        preGameSection.classList.add("active");
-        if(host) {
-          hostBtn.classList.remove("active");
-        }
-        else {
-          hostBtn.classList.add("active");
-        }
-        if(started) {
-          waitingInfo.innerHTML = "Game in progress...";
-        }
-        curButton = null;
-      });
-
-      socket.on("addTeamMember", function(type, name) {
-        addTeamName(type, name);
-      });
-
-      socket.on("teamListActive", function(isActive) {
-        if(isActive) {
-          teamSection.classList.add("active");
-        }
-        else {
-          teamSection.classList.remove("active");
-        }
-      });
-
-      socket.on("startTimer", function(seconds) {
-        if(seconds == -1) {
-          timer.classList.remove("active");
-          secLeft = -1;
-        }
-        else {
-          timer.classList.add("active");
-          if(secLeft < 1) {
-            secLeft = seconds + 1;
-            updateTime();
-          }
-          else {
-            secLeft = seconds + 1;
-          }
-        }
-      });
-
-      // socket.on("preGameLobby", function(packet) {
-      //   for(var i = 0; i < packet.length; i++) {
-      //     console.log(packet[i].name);
-      //   }
-      // });
-
-      socket.on("playerLobby", function(packet) {
-        addToLobby(packet.add, packet.name);
-      });
-
-      socket.on("saveID", function(id) {
-        localStorage.setItem("playerID", id);
-      })
-
-      socket.on("displayHost", function(display){
-        switch (display) {
-          case "none":
-            hostBtn.classList.remove("active");
-            quitHostBtn.classList.remove("active");
-            startBtn.classList.remove("active");
-            forceBtn.classList.remove("active");
-            reviewButton.classList.remove("active");
-            break;
-          case "host":
-            quitHostBtn.classList.add("active");
-            startBtn.classList.add("active");
-            forceBtn.classList.add("active");
-            reviewButton.classList.add("active");
-            break;
-          case "normal":
-            hostBtn.classList.add("active");
-            break;
-          default:
-            break;
-        }
-      });
-
-      socket.on("restartGame", function() {
-        localStorage.setItem("playerID", "");
-        promptArea.value = "";
-        guessArea.value = "";
-        clearCanvas(ctx);
-        clearCanvas(lobbyCtx);
-        clearCanvas(guessCtx);
-        clearTeamMembers();
-        waitingInfo.innerHTML = "Waiting for host to start...";
-      })
-
-      socket.on("createLine",function(data, lobby){
-        drawLine(lobby ? lobbyCtx : ctx, data.startX, data.startY, data.endX, data.endY, data.radius, data.color);
-      });
-
-      socket.on("showDrawing", function(drawing, canvasType){
-        if(canvasType == "main") {
-          drawLines(ctx, drawing);
-        }
-        else if(canvasType == "lobby") {
-          drawLines(lobbyCtx, drawing);
-        }
-        else if(canvasType == "guess") {
-          drawLines(guessCtx, drawing);
-        }
-      });
-
-      socket.on("changeText", function(text, isPrompt) {
-        if(isPrompt) {
-          promptArea.value = text;
-        }
-        else {
-          guessArea.value = text;
-        }
-      });
-
-      socket.on("gamePhase",function(phase){
-        preGameSection.classList.remove("active");
-        promptSection.classList.remove("active");
-        waitSection.classList.remove("active");
-        drawSection.classList.remove("active");
-        guessSection.classList.remove("active");
-        reviewSection.classList.remove("active");
-        muteButton.classList.remove("active");
-        teamSection.classList.remove("active");
-        switch(phase) {
-          case "prompt":
-            lobbyMusic.pause();
-            gameMusic.play();
-            waitingInfo.innerHTML = "Waiting for teams to finish...";
-            errorList.classList.remove("active");
-            promptSection.classList.add("active");
-            curButton = promptBtn;
-            break;
-          case "waiting":
-            hidePopup();
-            lobbyMusic.play();
-            gameMusic.pause();
-            waitSection.classList.add("active");
-            muteButton.classList.add("active");
-            curButton = null;
-            break;
-          case "draw":
-            lobbyMusic.pause();
-            gameMusic.play();
-            clearCanvas(ctx);
-            drawSection.classList.add("active");
-            curButton = drawBtn;
-            break;
-          case "guess":
-            lobbyMusic.pause();
-            gameMusic.play();
-            guessArea.value = "";
-            guessSection.classList.add("active");
-            curButton = guessBtn;
-            break;
-          case "review":
-            lobbyMusic.pause();
-            gameMusic.play();
-            reviewSection.classList.add("active");
-            break;
-          default:
-            break;
-        }
-      });
-
-      socket.on("errorSound", function() {
-        errorSound.play();
-      });
-
-      socket.on("showPopup", function(type){
-        showPopup(type);
-      });
-
-      socket.on("showPrompt",function(prompt){
-        drawPrompt.innerHTML = "Draw: " + prompt.text;
-      });
-
-      socket.on("showResult", function(chainLinks){
-        clearReview();
-        createText(reviewDisplay,"Original Prompt",chainLinks[0].text);
-        if(chainLinks.length % 2 == 1) {
-          createText(reviewDisplay,"Final Guess",chainLinks[chainLinks.length - 1].text);
-        }
-      });
-
-      socket.on("reviewLink", function(packet){
-        if(packet.clear) {
-          clearReview();
-        }
-        if(packet.type == "text") {
-          createText(reviewDisplay,(packet.clear ? "Original Prompt" : "Guess"),packet.link.text);
-        }
-        else if(packet.type == "drawing") {
-          createDrawing(packet.link);
-        }
-      });
-
-      function newPlayer() {
-        rejoinScrim.classList.remove("active");
-        rejoinSection.classList.remove("active");
-        //socket.emit("deleteAccount",localStorage.getItem("playerID"));
-        socket.emit("login",null);
-      }
-
-      function rejoinGame() {
-        rejoinScrim.classList.remove("active");
-        rejoinSection.classList.remove("active");
-        socket.emit("rejoinGame");
-      }
-
-      function joinGame() {
-        socket.emit("signInRequest",nameInput.value);
-      }
-
-      function addTeamName(type, name) {
-        //console.log(type);
-        if(type == "add") {
-          p = document.createElement("p");
-
-          p.innerHTML = name;
-          p.setAttribute("class","red");
-          p.setAttribute("id","team-list__" + name);
-
-          teamList.appendChild(p);
-        }
-        else {
-          p = document.querySelector("#team-list__" + name);
-          if (type == "red"){
-            p.classList.add("red");
-            p.classList.remove("green");
-            if(p.classList.contains("draw")) {
-              p.classList.remove("draw");
-              p.classList.add("draw");
-            }
-          }
-          else if (type == "green") {
-            p.classList.remove("red");
-            p.classList.add("green");
-            if(p.classList.contains("draw")) {
-              p.classList.remove("draw");
-              p.classList.add("draw");
-            }
-          }
-          else if (type == "draw"){
-            p.classList.remove("draw");
-            p.classList.add("draw");
-            drawChime.play();
-          }
-          else if (type == "noDraw"){
-            p.classList.remove("draw");
-          }
-        }
-      }
-
-      function clearTeamMembers() {
-        var teamMembers = teamList.getElementsByTagName("p");
-        //console.log(teamMembers);
-        while(teamMembers.length > 0){
-          teamList.removeChild(teamMembers[0]);
-        }
-      }
-
-      function addToLobby(type, name) {
-        chime.play();
-        var p;
-        if(type == "add") {
-          p = document.createElement("p");
-
-          p.setAttribute("id","lobby-name__" + name);
-          p.innerHTML = name;
-
-          playerList.appendChild(p);
-        }
-        else {
-          p = document.querySelector("#lobby-name__" + name);
-          if(type == "host") {
-            p.classList.add("host");
-            return;
-          }
-          else if(type == "stopHost") {
-            p.classList.remove("host");
-            return;
-          }
-          p.classList.remove("green");
-          p.classList.remove("gray");
-          p.classList.remove("red");
-          if(p != null) {
-            if(type == "gray") {
-              p.classList.add("gray");
-            }
-            else if(type == "green") {
-              p.classList.add("green");
-            }
-            else if(type == "red") {
-              p.classList.add("red");
-            }
-            else if(type == "remove") {
-              playerList.removeChild(p);
-            }
-          }
-        }
-      }
-
-      function becomeHost(become) {
-        socket.emit("becomeHost", become);
-      }
-
-      var painting = false;
-      var color = "red";
-      var size = 10;
-
-      function startDrawing(e) {
-        var canvasPercent = 500/this.offsetWidth;
-        canvasPercent = canvasPercent < 1 ? 1 : canvasPercent;
-
-        painting = true;
-        eventInfo = {
-          state: true,
-          x: (e.pageX - this.offsetLeft)*canvasPercent,
-          y: (e.pageY - this.offsetTop)*canvasPercent,
-          color: color,
-          size: size
-        };
-        socket.emit("linePress", eventInfo, (this.id == "lobby-canvas"));
-      }
-      function endDrawing(e) {
-        painting = false;
-        eventInfo = {
-          state: false
-        };
-        socket.emit("linePress", eventInfo, (this.id == "lobby-canvas"));
-      }
-      function draw(e) {
-        var canvasPercent = 500/this.offsetWidth;
-        canvasPercent = canvasPercent < 1 ? 1 : canvasPercent;
-
-        if(!painting) {
-          return;
-        }
-        if((e.pageX - this.offsetLeft)*canvasPercent < 1 || (e.pageX - this.offsetLeft)*canvasPercent > 500 || (e.pageY - this.offsetTop)*canvasPercent < 1 || (e.pageY - this.offsetTop)*canvasPercent > 500)
-        {
-          endDrawing();
-          return;
-        }
-        eventInfo = {
-          x: (e.pageX - this.offsetLeft)*canvasPercent,
-          y: (e.pageY - this.offsetTop)*canvasPercent,
-          color: color,
-          size: size
-        };
-        socket.emit("linePress", eventInfo, (this.id == "lobby-canvas"));
-      }
-      function startDrawingTouch(e) {
-        e.preventDefault();
-        //console.log(e.changedTouches[0]);
-        var canvasPercent = 500/this.offsetWidth;
-        canvasPercent = canvasPercent < 1 ? 1 : canvasPercent;
-
-        painting = true;
-        eventInfo = {
-          state: true,
-          x: (e.changedTouches[0].pageX - this.offsetLeft)*canvasPercent,
-          y: (e.changedTouches[0].pageY - this.offsetTop)*canvasPercent,
-          color: color,
-          size: size
-        };
-        socket.emit("linePress", eventInfo, (this.id == "lobby-canvas"));
-      }
-      function endDrawingTouch(e) {
-        painting = false;
-        eventInfo = {
-          state: false
-        };
-        socket.emit("linePress", eventInfo, (this.id == "lobby-canvas"));
-      }
-      function drawTouch(e) {
-        e.preventDefault();
-        //console.log(e.changedTouches[0]);
-        var canvasPercent = 500/this.offsetWidth;
-        canvasPercent = canvasPercent < 1 ? 1 : canvasPercent;
-
-        if(!painting) {
-          return;
-        }
-        if((e.changedTouches[0].pageX - this.offsetLeft)*canvasPercent < 1 || (e.changedTouches[0].pageX - this.offsetLeft)*canvasPercent > 500 || (e.changedTouches[0].pageY - this.offsetTop)*canvasPercent < 1 || (e.changedTouches[0].pageY - this.offsetTop)*canvasPercent > 500)
-        {
-          endDrawing();
-          return;
-        }
-        eventInfo = {
-          x: (e.changedTouches[0].pageX - this.offsetLeft)*canvasPercent,
-          y: (e.changedTouches[0].pageY - this.offsetTop)*canvasPercent,
-          color: color,
-          size: size
-        };
-        socket.emit("linePress", eventInfo, (this.id == "lobby-canvas"));
-      }
-
-      function drawLine(can, startX, startY, endX, endY, radius, color) {
-        if(radius == 1000) {
-          can.beginPath();
-          can.rect(0,0,500,500);
-          can.fillStyle = color;
-          can.fill();
-          return;
-        }
-        can.lineWidth = radius;
-        can.lineCap = "round";
-        can.strokeStyle = color;
-
-        can.beginPath();
-        can.moveTo(startX, startY);
-        can.lineTo(endX, endY);
-        can.stroke();
-      }
-      function drawLines(can, drawing) {
-        clearCanvas(can);
-        for(var i = 0; i < drawing.lineList.length; i++) {
-          var line = drawing.lineList[i];
-          drawLine(can, line.startX, line.startY, line.endX, line.endY, line.radius, line.color);
-        }
-      }
-      function clearCanvas(can) {
-        can.clearRect(0,0,500,500);
-      }
-
-      canvas.addEventListener("mousedown", startDrawing);
-      canvas.addEventListener("mouseup", endDrawing);
-      canvas.addEventListener("mousemove", draw);
-      canvas.addEventListener("touchstart", startDrawingTouch);
-      canvas.addEventListener("touchend", endDrawingTouch);
-      canvas.addEventListener("touchmove", drawTouch);
-      lobbyCanvas.addEventListener("mousedown", startDrawing);
-      lobbyCanvas.addEventListener("mouseup", endDrawing);
-      lobbyCanvas.addEventListener("mousemove", draw);
-      lobbyCanvas.addEventListener("touchstart", startDrawingTouch);
-      lobbyCanvas.addEventListener("touchend", endDrawingTouch);
-      lobbyCanvas.addEventListener("touchmove", drawTouch);
-
-      var colorSlider = document.querySelector("#color-slider");
-      var darknessSlider = document.querySelector("#darkness-slider");
-      var lightness = 50;
-      var hue = 0;
-      colorSlider.oninput = function() {
-        hue = this.value;
-
-        color = HSLToRGB(hue,100,lightness);
-
-        darknessSlider.style.background = "linear-gradient(90deg, rgb(0,0,0) 0%, " + HSLToRGB(hue,100,50) + " 50%, rgb(255,255,255) 100%)";
-
-        var newSizeBtn = document.querySelector("#size-" + size);
-        newSizeBtn.style.borderColor = color;
-      }
-      darknessSlider.oninput = function() {
-        lightness = this.value;
-
-        color = HSLToRGB(hue,100,lightness);
-
-        var newSizeBtn = document.querySelector("#size-" + size);
-        newSizeBtn.style.borderColor = color;
-      }
-
-      function changeSize(newSize) {
-        var oldSizeBtn = document.querySelector("#size-" + size);
-        oldSizeBtn.style.borderColor = "white";
-        size = newSize;
-        var newSizeBtn = document.querySelector("#size-" + size);
-        newSizeBtn.style.borderColor = color;
-      }
-
-      function HSLToRGB(h,s,l) {
-        // Must be fractions of 1
-        s /= 100;
-        l /= 100;
-
-        let c = (1 - Math.abs(2 * l - 1)) * s,
-            x = c * (1 - Math.abs((h / 60) % 2 - 1)),
-            m = l - c/2,
-            r = 0,
-            g = 0,
-            b = 0;
-
-        if (0 <= h && h < 60) {
-          r = c; g = x; b = 0;
-        } else if (60 <= h && h < 120) {
-          r = x; g = c; b = 0;
-        } else if (120 <= h && h < 180) {
-          r = 0; g = c; b = x;
-        } else if (180 <= h && h < 240) {
-          r = 0; g = x; b = c;
-        } else if (240 <= h && h < 300) {
-          r = x; g = 0; b = c;
-        } else if (300 <= h && h < 360) {
-          r = c; g = 0; b = x;
-        }
-        r = Math.round((r + m) * 255);
-        g = Math.round((g + m) * 255);
-        b = Math.round((b + m) * 255);
-
-        return "rgb(" + r + "," + g + "," + b + ")";
-      }
-
-      function writePrompt(e) {
-        socket.emit("textChange",this.value);
-      }
-
-      function confirmTeamSubmit(type) {
-        socket.emit("confirmTeamSubmit", type)
-      }
-
-      function showPopup(type) {
-        alertSound.play();
-        scrim.classList.add("active");
-        popup.classList.add("active");
-        popup.setAttribute("onclick","confirmSubmit('" + type + "');");
-      }
-      function hidePopup(cancel = false) {
-        scrim.classList.remove("active");
-        popup.classList.remove("active");
-        if(cancel) {
-          socket.emit("cancelConfirm");
-        }
-      }
-
-      function confirmSubmit(type) {
-        switch (type) {
-          case "phrase":
-            submitPhrase();
-            break;
-          case "drawing":
-            submitDrawing();
-            break;
-          case "guess":
-            submitGuess();
-            break;
-          case "force":
-            forceSubmit();
-          default:
-            break;
-        }
-        hidePopup();
-      }
-
-      function forceSubmit() {
-        socket.emit("forceSubmit");
-      }
-
-      function submitPhrase() {
-        var whiteSpace = promptArea.value.replace(/\s/g,'');
-        if(whiteSpace != "") {
-          socket.emit("promptSubmit");
-        }
-      }
-
-      function submitDrawing() {
-        socket.emit("drawingSubmit");
-      }
-
-      function submitGuess() {
-        var whiteSpace = guessArea.value.replace(/\s/g,'');
-        if(whiteSpace != "") {
-          socket.emit("promptSubmit");
-        }
-      }
-
-      promptArea.addEventListener("input", writePrompt);
-      guessArea.addEventListener("input", writePrompt);
-
-      function createText(parent, header, text) {
-        var container = document.createElement("div");
-        var headerEl = document.createElement("h1");
-        var textEl = document.createElement("p");
-
-        container.setAttribute("class","container review-container");
-        headerEl.innerHTML = header;
-        textEl.innerHTML = text;
-
-        container.appendChild(headerEl);
-        container.appendChild(textEl);
-        parent.appendChild(container);
-      }
-
-      function createDrawing(drawing) {
-        var canvasContainer = document.createElement("div");
-        var newCanvas = document.createElement("canvas");
-
-        canvasContainer.setAttribute("class","container canvas-container");
-        newCanvas.setAttribute("width",500);
-        newCanvas.setAttribute("height",500);
-        drawLines(newCanvas.getContext("2d"), drawing);
-
-        canvasContainer.appendChild(newCanvas);
-        reviewDisplay.appendChild(canvasContainer);
-      }
-
-      function viewChains() {
-        socket.emit("viewChains");
-      }
-
-      function clearReview() {
-        while(reviewDisplay.firstChild) {
-          reviewDisplay.removeChild(reviewDisplay.lastChild);
-        }
-      }
-
-      document.addEventListener("keyup", function(event){
-        if(event.keyCode === 13 && curButton != null) {
-          event.preventDefault();
-          curButton.click();
-        }
-      });
-
-      function muteMusic() {
-        lobbyMusic.muted = lobbyMusic.muted ? false : true;
-        gameMusic.muted = gameMusic.muted ? false : true;
-        if(gameMusic.muted) {
-          muteButton.style.backgroundColor = "red";
-        }
-        else {
-          muteButton.style.backgroundColor = "lime";
-          if(gameMusic.paused) {
-            lobbyMusic.play();
-          }
-          else {
-            gameMusic.play();
-          }
-        }
-      }
-
-      function updateTime() {
-        secLeft -= 1;
-        var secText = (secLeft > 9) ? secLeft : ("0" + secLeft);
-        timer.innerHTML = "0:" + secText;
-        if(secLeft >= 1) {
-          setTimeout(updateTime, 1000);
-        }
-      }
-
-      function startGame() {
-        socket.emit("startGame");
-      }
-    </script>
+      </div>
+    </section>
+
+    <section id="host">
+      <div id="host__become" class="container">
+        <button id="host__button--become" onclick="socket.emit('becomeHost',true)">Become Host</button>
+      </div>
+      <div id="host__start" class="container">
+        <button id="host__button--stop" onclick="socket.emit('becomeHost',false)">Stop Hosting</button>
+        <button id="host__button--start" onclick="socket.emit('startGame')">Start Game</button>
+      </div>
+      <div id="host__day" class="container">
+        <button id="host__button--confirm" onclick="socket.emit('confirmQuarantine')">Confirm Quarantine</button>
+      </div>
+      <div id="host__move" class="container">
+        <button onclick="socket.emit('moveToNight')">Move To Night</button>
+      </div>
+      <div id="host__pass" class="container">
+        <button onclick="socket.emit('passLeadership')">Pass Leadership</button>
+      </div>
+    </section>
+
+    <section id="night">
+      <div id="night__scrim"></div>
+      <div id="night__infected" class="container">
+        <p>Click a player to infect in your area, Quarantine has a 50% success rate, Open has a 25% success rate</p>
+        <button onclick="socket.emit('infectPlayer',false);">Don't Infect</button>
+      </div>
+    </section>
+
+    <section id="end">
+      <button onclick="socket.emit('endGame')">Finish Game</button>
+    </section>
+
+    <script type="text/javascript"  src="/client/js/sockets.js"></script>
   </body>
 </html>
