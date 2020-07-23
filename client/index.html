@@ -27,11 +27,27 @@
 
     <section id="sign-in" class="active">
       <div class="container prompt-input">
-        <p>Enter your name:</p>
+        <div class="chains">
+          <img src="/client/images/chains.png" alt="">
+          <img src="/client/images/chains.png" alt="">
+        </div>
+        <h1>Enter Your Name:</h1>
         <input maxlength="10" type="text" placeholder="Type here" id="sign-in__input">
         <p class="error-text" id="sign-in__error"></p>
+        <button id="sign-in__button" onclick="joinGame()" class="wooden-button">Join Game!</button>
       </div>
-      <button id="sign-in__button" onclick="joinGame()">Join Game!</button>
+      <div class="container" id="credits">
+        <div class="chains">
+          <img src="/client/images/chains.png" alt="">
+          <img src="/client/images/chains.png" alt="">
+        </div>
+        <h1>Credits</h1>
+        <p>Creator: Gabe</p>
+        <p>UI Design: Aidan</p>
+        <p>Avatar Art: Elena and Rachel</p>
+        <p>Music and Sounds: Music by Eric Matyas | www.soundimage.org</p>
+        <p>Help and Testing: Aidan, Jaimee, Elena, Amanda, Rachel, Matthew, and Ethan</p>
+      </div>
     </section>
 
     <section id="rejoin">
@@ -51,25 +67,58 @@
 
     <section id="header">
       <div id="header__container" class="container">
-        <h1>HEALTHY</h1>
-        <h2>0</h2>
+        <div class="chains">
+          <img src="/client/images/chains.png" alt="">
+          <img src="/client/images/chains.png" alt="">
+        </div>
+        <h1>You are: HEALTHY</h1>
+        <div>
+          <h2>Sick: </h2>
+          <h2 id="header__sick-num">0</h2>
+          <br>
+          <h2>Infected: </h2>
+          <h2 id="header__infected-num">0</h2>
+        </div>
       </div>
     </section>
 
     <section id="lobby">
       <!-- <canvas id="canvas" width="600" height="300"></canvas> -->
-      <div id="lobby__open-list" class="player-list container"></div>
+      <div id="lobby__open-list" class="player-list container">
+        <div class="chains">
+          <img src="/client/images/chains.png" alt="">
+          <img src="/client/images/chains.png" alt="">
+        </div>
+        <div class="header">
+          <h2>Open</h2>
+        </div>
+      </div>
       <div id="lobby__closed-list" class="player-list container">
-        <h2>Quarantine</h2>
+        <div class="chains">
+          <img src="/client/images/chains.png" alt="">
+          <img src="/client/images/chains.png" alt="">
+        </div>
+        <div class="header">
+          <h2>Quarantine</h2>
+          <h2 id="lobby__limit">Open Spots: 0</h2>
+        </div>
       </div>
     </section>
 
     <section id="vote">
       <div id="vote__poll" class="container">
-        <button onclick="socket.emit('voteDecision',true)">Agree</button>
-        <button onclick="socket.emit('voteDecision',false)">Disagree</button>
+        <div class="chains">
+          <img src="/client/images/chains.png" alt="">
+          <img src="/client/images/chains.png" alt="">
+        </div>
+        <button onclick="socket.emit('voteDecision',true)" class="wooden-button">Agree</button>
+        <button onclick="socket.emit('voteDecision',false)" class="wooden-button">Disagree</button>
       </div>
       <div id="vote__results" class="container">
+        <div class="chains">
+          <img src="/client/images/chains.png" alt="">
+          <img src="/client/images/chains.png" alt="">
+        </div>
         <h1 id="vote__results__info">Do you agree with this group?</h1>
         <div id="vote__results--agree">
           <h1>Agree</h1>
@@ -82,35 +131,72 @@
       </div>
     </section>
 
+    <section id="end">
+      <div class="container">
+        <div class="chains">
+          <img src="/client/images/chains.png" alt="">
+          <img src="/client/images/chains.png" alt="">
+        </div>
+        <h1></h1>
+      </div>
+    </section>
+
     <section id="host">
       <div id="host__become" class="container">
-        <button id="host__button--become" onclick="socket.emit('becomeHost',true)">Become Host</button>
+        <div class="chains">
+          <img src="/client/images/chains.png" alt="">
+          <img src="/client/images/chains.png" alt="">
+        </div>
+        <button id="host__button--become" class="wooden-button" onclick="socket.emit('becomeHost',true)">Become Host</button>
       </div>
       <div id="host__start" class="container">
-        <button id="host__button--stop" onclick="socket.emit('becomeHost',false)">Stop Hosting</button>
-        <button id="host__button--start" onclick="socket.emit('startGame')">Start Game</button>
+        <div class="chains">
+          <img src="/client/images/chains.png" alt="">
+          <img src="/client/images/chains.png" alt="">
+        </div>
+        <button id="host__button--stop" class="wooden-button" onclick="socket.emit('becomeHost',false)">Stop Hosting</button>
+        <button id="host__button--start" class="wooden-button" onclick="socket.emit('startGame')">Start Game</button>
       </div>
       <div id="host__day" class="container">
-        <button id="host__button--confirm" onclick="socket.emit('confirmQuarantine')">Confirm Quarantine</button>
+        <div class="chains">
+          <img src="/client/images/chains.png" alt="">
+          <img src="/client/images/chains.png" alt="">
+        </div>
+        <button id="host__button--confirm" class="wooden-button long" onclick="socket.emit('confirmQuarantine')">Confirm Quarantine</button>
       </div>
       <div id="host__move" class="container">
-        <button onclick="socket.emit('moveToNight')">Move To Night</button>
+        <div class="chains">
+          <img src="/client/images/chains.png" alt="">
+          <img src="/client/images/chains.png" alt="">
+        </div>
+        <button onclick="socket.emit('moveToNight')" class="wooden-button">Move To Night</button>
       </div>
       <div id="host__pass" class="container">
-        <button onclick="socket.emit('passLeadership')">Pass Leadership</button>
+        <div class="chains">
+          <img src="/client/images/chains.png" alt="">
+          <img src="/client/images/chains.png" alt="">
+        </div>
+        <button onclick="socket.emit('passLeadership')" class="wooden-button">Pass Leadership</button>
+      </div>
+      <div id="host__end-game" class="container">
+        <div class="chains">
+          <img src="/client/images/chains.png" alt="">
+          <img src="/client/images/chains.png" alt="">
+        </div>
+        <button onclick="socket.emit('endGame')" class="wooden-button">Finish Game</button>
       </div>
     </section>
 
     <section id="night">
       <div id="night__scrim"></div>
       <div id="night__infected" class="container">
-        <p>Click a player to infect in your area, Quarantine has a 50% success rate, Open has a 25% success rate</p>
-        <button onclick="socket.emit('infectPlayer',false);">Don't Infect</button>
+        <div class="chains">
+          <img src="/client/images/chains.png" alt="">
+          <img src="/client/images/chains.png" alt="">
+        </div>
+        <h1 id="night__timer">0:20</h1>
+        <p>Click a player to infect</p>
       </div>
-    </section>
-
-    <section id="end">
-      <button onclick="socket.emit('endGame')">Finish Game</button>
     </section>
 
     <script type="text/javascript"  src="/client/js/sockets.js"></script>

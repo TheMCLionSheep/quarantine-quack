@@ -7,7 +7,7 @@ socket.on("connect",function(){
 socket.on("disconnect", function() {
   scrim.classList.add("active");
   disconnectSection.classList.add("active");
-  setTimeout(function() {disconnectSection.querySelector(".popdown").classList.add("active");},1)
+  setTimeout(function() {disconnectSection.querySelector(".popdown").classList.add("active");},1);
 });
 
 socket.on("rejoinPopup", function() {
@@ -24,6 +24,7 @@ socket.on("signInReject", function(reason) {
 });
 
 socket.on("joinGame", function(host, started) {
+  playSound(dayMusic, true);
   signInSection.classList.remove("active");
   headerSection.classList.add("active");
   lobbySection.classList.add("active");
@@ -52,15 +53,14 @@ socket.on("saveID", function(id) {
 });
 
 //Lobby
-socket.on("moveToDay", function(isHost, isInfected, infectedNum) {
+socket.on("moveToDay", function(isHost, healthState, infectedNum, sickNum, closedNum) {
+  playSound(dayMusic, true);
   if(isHost) {
     hostStart.classList.remove("active");
     hostDay.classList.add("active");
   }
-  if(isInfected) {
-    convertInfected();
-  }
-  headerSection.querySelector("h2").innerHTML = infectedNum;
+  convertState(healthState == "sick" ? "healthy" : healthState);
+  updateDayNum(infectedNum, sickNum, closedNum);
 });
 
 socket.on("playerLobby", function(packet) {
@@ -140,28 +140,27 @@ socket.on("removeHostVote", function() {
 
 //Night
 socket.on("nightPhase", function(isInfected) {
+  playSound(nightMusic, true);
   voteSection.classList.remove("active");
   voteResults.classList.remove("active");
   nightSection.classList.add("active");
-  createPopdown("It's night time!","Continue","closePopdown(this.parentNode)","The infected can attempt to infect another person in the same area! Any attempts will be counted during the day.");
+  createPopdown("It's night time!","Continue","closePopdown(this.parentNode)","Any infected that aren't in quarantine can infect players in the open.");
   if(isInfected) {
     nightInfected.classList.add("active");
+    startNightTimer(20);
   }
 });
-socket.on("hideInfect", function() {
-  nightInfected.classList.remove("active");
-});
-socket.on("nightResults", function(infectedAdded, infectClosed, infected, winCondition) {
+socket.on("nightResults", function(healthAdded, sickAdded, infectedAdded, slotGains, infected, winCondition) {
   nightSection.classList.remove("active");
-  showNightResults(infectedAdded, infectClosed, infected, winCondition);
+  showNightResults(healthAdded, sickAdded, infectedAdded, slotGains, infected, winCondition);
 });
 
 //End game
-socket.on("infectedList", function(infectedList) {
+socket.on("infectedList", function(infectedList, sickList) {
   for(var i = 0; i < infectedList.length; i++) {
     editPlayerList("infected", infectedList[i]);
   }
 });
-socket.on("endGame", function() {
-  endSection.classList.add("active");
+socket.on("endGameButton", function() {
+  hostEndGame.classList.add("active");
 })

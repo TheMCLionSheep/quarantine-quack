@@ -3,8 +3,8 @@ body {
   margin: 0;
   width: 100%;
   min-height: 100vh;
-  /* background: url("/client/images/background.jpg") repeat repeat center center rgb(255,255,255); */
-  background: white;
+  background: url("/client/images/background.jpg") fixed no-repeat no-repeat center center rgb(255,255,255);
+  background-size: cover;
   text-align: center;
   font-family: 'Architects Daughter', cursive;
 }
@@ -24,10 +24,29 @@ section.active {
 }
 
 .container {
-  background-color: rgb(248,224,167);
+  position: relative;
+  margin: 30px 20px 0;
+  background: url("/client/images/wood-grid.png") repeat repeat center center rgb(181,147,113);
+  background-size: 512px 512px;
   color: #660000;
   border-radius: 5px;
-  box-shadow: 0px 0px 3px 0px rgb(248,224,167), 0px 0px 3px 2px rgb(140,112,69), 0px 0px 3px 4px rgb(47,32,21);
+  box-shadow: 0px 0px 3px 0px rgb(181,147,113), 0px 0px 3px 2px rgb(126,106,87), 0px 0px 3px 4px rgb(84,65,47);
+}
+.container .chains {
+  position: absolute;
+  display: flex;
+  flex-flow: row;
+  justify-content: space-between;
+  top: 0;
+  left: 50%;
+  width: 90%;
+  transform: translate(-50%, -150%);
+}
+.container .chains img {
+  position: relative;
+  transform: rotate(90deg);
+  width: 40px;
+  height: 10px;
 }
 
 .popdown {
@@ -61,30 +80,43 @@ section.active {
   padding: 0px 10px;
 }
 .popdown button {
-  margin: 10px;
+  margin: 10px auto;
 }
 
 .wooden-button {
-  background-color: rgb(120, 60, 20);
+  background: url("/client/images/button.png") repeat repeat center center;
+  background-size: 100% 100%;
+  width: 200px;
+  height: 90px;
   border: none;
-  border-radius: 5px;
   font-family: 'Architects Daughter', cursive;
   font-size: 20px;
-  padding: 5px 20px;
+  outline: none;
+}
+.wooden-button:hover {
+  background-image: url("/client/images/button-hover.png");
+}
+.wooden-button.long {
+  background: url("/client/images/button-long.png") repeat repeat center center;
+  background-size: 100% 100%;
+  width: 300px;
+}
+.wooden-button.long:hover {
+  background-image: url("/client/images/button-long-hover.png");
 }
 
-#sign-in {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%,-50%);
-}
-#sign-in .prompt-input {
-  margin: 0 auto;
-  width: 500px;
-}
 #sign-in .prompt-input p{
   margin: 0;
+}
+#sign-in .prompt-input input{
+  width: 400px;
+  background: rgb(255,255,255);
+  font-size: 20px;
+  font-family: 'Architects Daughter', cursive;
+}
+
+#credits p {
+  font-size: 20px;
 }
 
 .scrim {
@@ -113,57 +145,107 @@ section.active {
   padding: 20px;
 }
 #disconnect button {
-  margin: 10px;
+  margin: 10px auto;
 }
 
 #header #header__container {
-  margin: 30px 20px;
   position: relative;
-  /* background: url("/client/images/header.jpg") repeat-x center center rgb(130,80,50); */
-  background-size: auto 200%;
   color: #660000;
+  display: flex;
+  flex-flow: row;
+  justify-content: center;
+  align-items: center;
 }
 #header #header__container h1 {
   margin: 0;
   padding: 10px;
+  padding-right: 50px;
   font-size: 40px;
 }
 #header #header__container h2 {
-  position: absolute;
-  margin: 0;
-  right: 10px;
-  top: 50%;
-  font-size: 50px;
-  transform: translateY(-50%);
+  display: inline-block;
+  font-size: 20px;
 }
 
 /* Lobby */
+#lobby #lobby__closed-list h2{
+  width: auto;
+  display: inline-block;
+}
+#lobby #lobby__closed-list #lobby__limit{
+  padding-left: 50px;
+}
 #lobby .player-list {
+  display: flex;
+  flex-flow: row wrap;
+  justify-content: center;
   min-height: 100px;
-  margin: 20px;
+}
+#lobby .player-list .header {
+  width: 100%;
 }
 #lobby .player-list button {
+  position: relative;
+  display: flex;
+  flex-flow: column;
+  justify-content: center;
+  align-items: center;
   margin: 10px;
+  background: url("/client/images/square-button.png") repeat repeat center center;
+  background-size: 100% 100%;
+  width: 100px;
+  height: 100px;
+  padding: 0;
+  border: none;
+  font-size: 16px;
+  line-height: 16px;
+  outline: none;
+}
+#lobby .player-list button:hover {
+  background-image: url("/client/images/square-button-hover.png");
 }
 #lobby .player-list button img {
-  height: 40px;
-  width: 40px;
+  height: 50px;
+  width: 50px;
+  padding-bottom: 5px;
 }
-#lobby .player-list button.host {
-  outline: 3px solid yellow;
+#lobby .player-list button .status {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 20px;
+  height: 20px;
+  border-radius: 10px;
 }
-#lobby .player-list button.agree {
-  outline: 3px solid green;
+#lobby .player-list button .status.host {
+  width: 30px;
+  height: 30px;
+  background: url("/client/images/crown.png") no-repeat no-repeat center center;
+  background-size: cover;
+  border-radius: 0;
+  left: 50%;
+  transform: translate(-50%, -50%);
 }
-#lobby .player-list button.disagree {
-  outline: 3px solid red;
-}
-#lobby .player-list button.infected {
+#lobby .player-list button .status.agree {
   background: green;
+}
+#lobby .player-list button .status.disagree {
+  background: red;
+}
+#lobby .player-list button .status.infected{
+  background: orange;
+}
+#lobby .player-list button .status.chosen{
+  width: 150px;
+  height: 150px;
+  background: url("/client/images/drawn_circle.png") no-repeat no-repeat center center;
+  background-size: cover;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
 }
 
 #host > div {
-  margin: 30px 20px;
   display: none;
 }
 #host > div.active {
@@ -171,9 +253,6 @@ section.active {
 }
 
 /* Vote */
-#vote {
-  margin: 20px;
-}
 #vote > div {
   display: none;
 }
@@ -204,4 +283,8 @@ section.active {
 }
 #night #night__infected.active {
   display: block;
+}
+
+#end h1{
+  padding: 30px 0;
 }
