@@ -189,10 +189,10 @@ function rejoinGame() {
 
 function loadSounds() {
   nightMusic = createAudio("/client/audio/Dark-Things-2_V001.mp3");
-  nightMusic.volume = 0.7;
+  nightMusic.volume = 0.5;
   nightMusic.playbackRate = 1.5;
   dayMusic = createAudio("/client/audio/City-of-Dread_Looping.mp3");
-  dayMusic.volume = 0.3;
+  dayMusic.volume = 0.2;
   dayMusic.addEventListener("ended", function() {
     dayMusic.play();
   });
