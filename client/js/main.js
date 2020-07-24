@@ -7,6 +7,7 @@ var chosenAvatar = -1;
 //Sounds
 var nightMusic;
 var dayMusic;
+var buttonPress;
 
 //Misc
 var scrim;
@@ -123,7 +124,7 @@ function variableAssignment() {
 }
 
 function addEventListeners() {
-  signInInput.addEventListener("keyup", function(event) {
+  signInSection.addEventListener("keyup", function(event) {
     if(event.keyCode == 13) {
       event.preventDefault();
       signInButton.click();
@@ -158,7 +159,7 @@ function createPopdown(title, buttonName, onclick, content = null) {
       basicPopdown.querySelector("p").innerHTML = content;
     }
     basicPopdown.querySelector("button").innerHTML = buttonName;
-    basicPopdown.querySelector("button").setAttribute("onclick",onclick);
+    basicPopdown.querySelector("button").setAttribute("onclick","playSound(buttonPress); " + onclick);
     basicPopdown.classList.add("active");
   }, waitTime);
 }
@@ -201,7 +202,7 @@ function populateAvatars() {
     var button = document.createElement("button");
     var image = document.createElement("img");
 
-    button.setAttribute("onclick","choseAvatar(" + i + ")");
+    button.setAttribute("onclick","playSound(buttonPress);  choseAvatar(" + i + ")");
     image.setAttribute("src",getIconSrc(i));
 
     button.appendChild(image);
@@ -225,14 +226,13 @@ function choseAvatar(avatar) {
 
 //Sounds
 function loadSounds() {
-  nightMusic = createAudio("/client/audio/Dark-Things-2_V001.mp3");
-  nightMusic.volume = 0.3;
+  nightMusic = createAudio("/client/audio/Dark-Things-2-V001.mp3");
   nightMusic.playbackRate = 1.5;
-  dayMusic = createAudio("/client/audio/City-of-Dread_Looping.mp3");
-  dayMusic.volume = 0.1;
+  dayMusic = createAudio("/client/audio/City-of-Dread-Looping.mp3");
   dayMusic.addEventListener("ended", function() {
     dayMusic.play();
   });
+  buttonPress = createAudio("/client/audio/button-click.mp3");
 }
 
 function createAudio(src) {
@@ -241,7 +241,7 @@ function createAudio(src) {
   return audio;
 }
 
-function playSound(sound, isMusic) {
+function playSound(sound, isMusic = false) {
   if(isMusic) {
     nightMusic.pause();
     dayMusic.pause();
@@ -252,14 +252,14 @@ function playSound(sound, isMusic) {
 
 function toggleMute() {
   if(muted) {
-    dayMusic.volume = 0.1;
-    nightMusic.volume = 0.3;
+    dayMusic.muted = false;
+    nightMusic.muted = false;
     muteButton.classList.remove("muted");
     muted = false;
   }
   else {
-    dayMusic.volume = 0;
-    nightMusic.volume = 0;
+    dayMusic.muted = true;
+    nightMusic.muted = true;
     muteButton.classList.add("muted");
     muted = true;
   }
@@ -272,7 +272,7 @@ function editPlayerList(actionType, name, icon = null) {
     var playerIcon = document.createElement("img");
     var playerName = document.createElement("p");
 
-    playerButton.setAttribute("onclick","socket.emit('updateLobby','moveToClosed','" + name + "'); socket.emit('infectPlayer','" + name + "')");
+    playerButton.setAttribute("onclick","playSound(buttonPress);  socket.emit('updateLobby','moveToClosed','" + name + "'); socket.emit('infectPlayer','" + name + "')");
     playerButton.setAttribute("id","open-list-name--" + name);
     playerIcon.setAttribute("src",getIconSrc(icon));
     playerName.innerHTML = name;
@@ -284,13 +284,13 @@ function editPlayerList(actionType, name, icon = null) {
   else {
     var playerButton = document.querySelector("#open-list-name--" + name);
     if(actionType == "moveToClosed") {
-      playerButton.setAttribute("onclick","socket.emit('updateLobby','moveToOpen','" + name + "'); socket.emit('infectPlayer','" + name + "')");
+      playerButton.setAttribute("onclick","playSound(buttonPress);  socket.emit('updateLobby','moveToOpen','" + name + "'); socket.emit('infectPlayer','" + name + "')");
       lobbyClosedList.appendChild(playerButton);
       slots--;
       lobbyLimit.innerHTML = "Open Spots: " + slots;
     }
     else if(actionType == "moveToOpen") {
-      playerButton.setAttribute("onclick","socket.emit('updateLobby','moveToClosed','" + name + "'); socket.emit('infectPlayer','" + name + "')");
+      playerButton.setAttribute("onclick","playSound(buttonPress);  socket.emit('updateLobby','moveToClosed','" + name + "'); socket.emit('infectPlayer','" + name + "')");
       lobbyOpenList.appendChild(playerButton);
       slots++;
       lobbyLimit.innerHTML = "Open Spots: " + slots;
@@ -371,6 +371,9 @@ function convertState(state) {
 function updateTimer() {
   var curTime = new Date().getTime();
   timeLeft = Math.ceil((endTime - curTime)/1000);
+  if(timeLeft < 0) {
+    timeLeft = 0;
+  }
   var seconds = (timeLeft%60)
   headerTimer.innerHTML = Math.floor(timeLeft/60) + ":" + (seconds < 10 ? "0" + seconds : seconds);
   if(curTime < endTime) {

@@ -46,29 +46,34 @@ io.sockets.on("connection", function(socket) {
     })
 
     socket.on("signInRequest", function(name, avatar) {
-      if(name.length > 10) {
-        socket.emit("signInReject","*Max character length of 10!");
-      }
-      else {
-        var letterNumber = /^[0-9a-zA-Z]+$/;
-        if(name.match(letterNumber)) {
-          var isValid = true;
-          for(var pl in Player.list) {
-            if(Player.list[pl].name == name) {
-              isValid = false;
+      if(Game.list[1].round == 0) {
+        if(name.length > 10) {
+          socket.emit("signInReject","*Max character length of 10!");
+        }
+        else {
+          var letterNumber = /^[0-9a-zA-Z]+$/;
+          if(name.match(letterNumber)) {
+            var isValid = true;
+            for(var pl in Player.list) {
+              if(Player.list[pl].name == name) {
+                isValid = false;
+              }
+            }
+            if(isValid) {
+              Player.onConnect(socket, name, avatar);
+              console.log(name + " joined the game.");
+            }
+            else {
+              socket.emit("signInReject","*Name is already taken!");
             }
           }
-          if(isValid) {
-            Player.onConnect(socket, name, avatar);
-            console.log(name + " joined the game.");
-          }
-          else {
-            socket.emit("signInReject","*Name is already taken!");
+          else{
+            socket.emit("signInReject","*Only use letters and numbers!");
           }
         }
-        else{
-          socket.emit("signInReject","*Only use letters and numbers!");
-        }
+      }
+      else {
+        socket.emit("signInReject","*Game already in session!");
       }
     })
 

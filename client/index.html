@@ -23,7 +23,7 @@
       <div class="popdown" id="basic-popdown">
         <h1>Title</h1>
         <p></p>
-        <button onclick="" class="wooden-button">Continue</button>
+        <button onclick="playSound(buttonPress); " class="wooden-button">Continue</button>
       </div>
 
       <section id="sign-in" class="active">
@@ -49,7 +49,7 @@
             <img src="/client/images/chains.png" alt="">
             <img src="/client/images/chains.png" alt="">
           </div>
-          <button id="sign-in__button" onclick="joinGame()" class="wooden-button">Join Game!</button>
+          <button id="sign-in__button" onclick="playSound(buttonPress); joinGame()" class="wooden-button">Join Game!</button>
         </div>
         <div class="container" id="credits">
           <div class="chains">
@@ -61,22 +61,22 @@
           <p>UI Design: Aidan</p>
           <p>Avatar Art: Elena and Rachel</p>
           <p>Music and Sounds: Music by Eric Matyas | www.soundimage.org</p>
-          <p>Help and Testing: Aidan, Jaimee, Elena, Amanda, Rachel, Matthew, and Ethan</p>
+          <p>Help and Testing: Aidan, Jaimee, Elena, Amanda, Rachel, Matthew, Ethan, Bean, and Cooper</p>
         </div>
       </section>
 
       <section id="rejoin">
         <div class="popdown">
           <h1>Old player detected!</h1>
-          <button onclick="rejoinGame();" class="wooden-button">Rejoin</button>
-          <button onclick="newPlayer();" class="wooden-button">New Player</button>
+          <button onclick="playSound(buttonPress); rejoinGame();" class="wooden-button">Rejoin</button>
+          <button onclick="playSound(buttonPress); newPlayer();" class="wooden-button">New Player</button>
         </div>
       </section>
 
       <section id="disconnect">
         <div class="popdown">
           <h1>Uh oh, you've disconnected!</h1>
-          <button onclick="location.reload();" class="wooden-button">Reload</button>
+          <button onclick="playSound(buttonPress); location.reload();" class="wooden-button">Reload</button>
         </div>
       </section>
 
@@ -96,7 +96,7 @@
             <h2>Infected: </h2>
             <h2 id="header__infected-num">0</h2>
           </div>
-          <button onclick="toggleMute()" id="mute-button"></button>
+          <button onclick="playSound(buttonPress); toggleMute()" id="mute-button"></button>
         </div>
       </section>
 
@@ -129,8 +129,8 @@
             <img src="/client/images/chains.png" alt="">
             <img src="/client/images/chains.png" alt="">
           </div>
-          <button onclick="socket.emit('voteDecision',true)" class="wooden-button">Agree</button>
-          <button onclick="socket.emit('voteDecision',false)" class="wooden-button">Disagree</button>
+          <button onclick="playSound(buttonPress); socket.emit('voteDecision',true)" class="wooden-button">Agree</button>
+          <button onclick="playSound(buttonPress); socket.emit('voteDecision',false)" class="wooden-button">Disagree</button>
         </div>
         <div id="vote__results" class="container">
           <div class="chains">
@@ -165,43 +165,43 @@
             <img src="/client/images/chains.png" alt="">
             <img src="/client/images/chains.png" alt="">
           </div>
-          <button id="host__button--become" class="wooden-button" onclick="socket.emit('becomeHost',true)">Become Host</button>
+          <button id="host__button--become" class="wooden-button" onclick="playSound(buttonPress); socket.emit('becomeHost',true)">Become Host</button>
         </div>
         <div id="host__start" class="container">
           <div class="chains">
             <img src="/client/images/chains.png" alt="">
             <img src="/client/images/chains.png" alt="">
           </div>
-          <button id="host__button--stop" class="wooden-button" onclick="socket.emit('becomeHost',false)">Stop Hosting</button>
-          <button id="host__button--start" class="wooden-button" onclick="socket.emit('startGame')">Start Game</button>
+          <button id="host__button--stop" class="wooden-button" onclick="playSound(buttonPress); socket.emit('becomeHost',false)">Stop Hosting</button>
+          <button id="host__button--start" class="wooden-button" onclick="playSound(buttonPress); socket.emit('startGame')">Start Game</button>
         </div>
         <div id="host__day" class="container">
           <div class="chains">
             <img src="/client/images/chains.png" alt="">
             <img src="/client/images/chains.png" alt="">
           </div>
-          <button id="host__button--confirm" class="wooden-button long" onclick="socket.emit('confirmQuarantine')">Confirm Quarantine</button>
+          <button id="host__button--confirm" class="wooden-button long" onclick="playSound(buttonPress); socket.emit('confirmQuarantine')">Confirm Quarantine</button>
         </div>
         <div id="host__move" class="container">
           <div class="chains">
             <img src="/client/images/chains.png" alt="">
             <img src="/client/images/chains.png" alt="">
           </div>
-          <button onclick="socket.emit('moveToNight')" class="wooden-button">Move To Night</button>
+          <button onclick="playSound(buttonPress); socket.emit('moveToNight')" class="wooden-button">Move To Night</button>
         </div>
         <div id="host__pass" class="container">
           <div class="chains">
             <img src="/client/images/chains.png" alt="">
             <img src="/client/images/chains.png" alt="">
           </div>
-          <button onclick="socket.emit('passLeadership')" class="wooden-button">Pass Leadership</button>
+          <button onclick="playSound(buttonPress); socket.emit('passLeadership')" class="wooden-button">Pass Leadership</button>
         </div>
         <div id="host__end-game" class="container">
           <div class="chains">
             <img src="/client/images/chains.png" alt="">
             <img src="/client/images/chains.png" alt="">
           </div>
-          <button onclick="socket.emit('endGame')" class="wooden-button">Finish Game</button>
+          <button onclick="playSound(buttonPress); socket.emit('endGame')" class="wooden-button">Finish Game</button>
         </div>
       </section>
 
