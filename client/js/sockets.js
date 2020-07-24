@@ -53,18 +53,30 @@ socket.on("saveID", function(id) {
 });
 
 //Lobby
-socket.on("moveToDay", function(isHost, healthState, infectedNum, sickNum, closedNum) {
+socket.on("moveToDay", function(isHost, healthState, infectedNum, sickNum, closedNum, roundNum) {
   playSound(dayMusic, true);
+  startTimer(300);
   if(isHost) {
     hostStart.classList.remove("active");
     hostDay.classList.add("active");
   }
-  convertState(healthState == "sick" ? "healthy" : healthState);
-  updateDayNum(infectedNum, sickNum, closedNum);
+  if(healthState == "sick") {
+    healthState = "healthy";
+  }
+  else if(healthState == "new") {
+    healthState = "infected";
+  }
+  convertState(healthState);
+  updateDayNum(infectedNum, sickNum, closedNum, roundNum);
 });
 
 socket.on("playerLobby", function(packet) {
-  editPlayerList(packet.type, packet.name);
+  if(packet.type == "add") {
+    editPlayerList(packet.type, packet.name, packet.avatar);
+  }
+  else {
+    editPlayerList(packet.type, packet.name);
+  }
 });
 
 socket.on("retryDay", function(isHost) {
@@ -99,9 +111,12 @@ socket.on("removeHostDay", function() {
   hostDay.classList.remove("active");
 });
 
-socket.on("voteForClosed", function() {
+socket.on("voteForClosed", function(voteArray) {
   voteSection.classList.add("active");
   votePoll.classList.add("active");
+  for(var i = 0; i < voteArray.length; i++) {
+    editPlayerList("voteWait", voteArray[i]);
+  }
 });
 
 socket.on("finishedVoting", function() {
@@ -145,9 +160,9 @@ socket.on("nightPhase", function(isInfected) {
   voteResults.classList.remove("active");
   nightSection.classList.add("active");
   createPopdown("It's night time!","Continue","closePopdown(this.parentNode)","Any infected that aren't in quarantine can infect players in the open.");
+  startTimer(20);
   if(isInfected) {
     nightInfected.classList.add("active");
-    startNightTimer(20);
   }
 });
 socket.on("nightResults", function(healthAdded, sickAdded, infectedAdded, slotGains, infected, winCondition) {

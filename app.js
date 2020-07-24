@@ -37,7 +37,7 @@ io.sockets.on("connection", function(socket) {
     socket.on("rejoinGame", function() {
       socket.id = savedID;
       SOCKET_LIST[socket.id] = socket;
-      Player.onConnect(socket, Player.list[savedID].name, true);
+      Player.onConnect(socket, Player.list[savedID].name, Player.list[savedID].avatar, true);
       console.log(Player.list[savedID].name + " rejoined the game.");
     });
 
@@ -45,7 +45,7 @@ io.sockets.on("connection", function(socket) {
       Player.onDisconnect(id);
     })
 
-    socket.on("signInRequest", function(name) {
+    socket.on("signInRequest", function(name, avatar) {
       if(name.length > 10) {
         socket.emit("signInReject","*Max character length of 10!");
       }
@@ -59,7 +59,7 @@ io.sockets.on("connection", function(socket) {
             }
           }
           if(isValid) {
-            Player.onConnect(socket, name);
+            Player.onConnect(socket, name, avatar);
             console.log(name + " joined the game.");
           }
           else {
@@ -93,6 +93,8 @@ var Game = function(id) {
     closedSlots: 0,
     slotGains: 0,
     hostId: 0,
+    timeLeft: 0,
+    timer: null,
     win: null
   }
   game.startGame = function () {
@@ -141,10 +143,13 @@ var Game = function(id) {
 
     game.playerList = shuffleObject(game.playerList);
 
+    //Set Time
+    game.timer = startTimer(game, 300);
+
     for(pl in game.playerList) {
       var tempSocket = SOCKET_LIST[pl];
       if(tempSocket != null) {
-        tempSocket.emit("moveToDay", game.hostId == pl, game.playerList[pl].state, game.infectedNum, game.sickNum, game.closedSlots);
+        tempSocket.emit("moveToDay", game.hostId == pl, game.playerList[pl].state, game.infectedNum, game.sickNum, game.closedSlots, game.round);
         tempSocket.emit("startingPopdown", game.playerList[pl].state == "infected", game.infectedNum);
         tempSocket.emit("saveID", pl);
         if(game.playerList[pl].state == "infected") {
@@ -155,10 +160,19 @@ var Game = function(id) {
   }
   game.confirmQuarantine = function() {
     game.phase = 2;
+    var voteArray = [];
+    for(pl in game.playerList) {
+      if(!game.playerList[pl].isBot) {
+        voteArray.push(game.playerList[pl].name);
+      }
+    }
     for(pl in game.playerList) {
       var tempSocket = SOCKET_LIST[pl];
       if(tempSocket != null) {
-        tempSocket.emit("voteForClosed");
+        if(game.hostId == pl) {
+          tempSocket.emit("removeHostDay");
+        }
+        tempSocket.emit("voteForClosed", voteArray);
       }
       if(game.playerList[pl].isBot) {
         game.playerList[pl].agree = game.playerList[pl].getBotVote();
@@ -216,6 +230,9 @@ var Game = function(id) {
       }
     }
     game.closedNum = 0;
+
+    clearTimeout(game.timer);
+    game.timer = startTimer(game, 300);
   }
   game.adjustSlots = function() {
     game.slotGains += (game.infectedNum + game.sickNum);
@@ -261,6 +278,9 @@ var Game = function(id) {
     if(checkQuarantine) {
       game.win = "healthy";
     }
+    if(game.round >= 8) {
+      game.win = "overtime"
+    }
 
     for(pl in game.playerList) {
       var tempSocket = SOCKET_LIST[pl];
@@ -272,8 +292,9 @@ var Game = function(id) {
         game.playerList[pl].toInfect = game.playerList[pl].getBotInfect();
       }
     }
+    clearTimeout(game.timer);
 
-    startNightTimer(game);
+    game.timer = startTimer(game, 20);
   }
   game.infectAttempt = function() {
     var sickAdded = 0;
@@ -354,8 +375,8 @@ var Game = function(id) {
     for(pl in game.playerList) {
       var tempSocket = SOCKET_LIST[pl];
       if(tempSocket != null) {
-        tempSocket.emit("moveToDay", game.hostId == pl, game.playerList[pl].state, game.infectedNum, game.sickNum, game.closedSlots);
-        tempSocket.emit("nightResults", infectResult[0], infectResult[1], infectResult[2], game.slotGains, game.playerList[pl].infected == "new", game.win);
+        tempSocket.emit("moveToDay", game.hostId == pl, game.playerList[pl].state, game.infectedNum, game.sickNum, game.closedSlots, game.round);
+        tempSocket.emit("nightResults", infectResult[0], infectResult[1], infectResult[2], game.slotGains, game.playerList[pl].state == "new", game.win);
         if(game.playerList[pl].state == "new") {
           game.playerList[pl].state = "infected";
         }
@@ -372,12 +393,13 @@ var Game = function(id) {
 Game.list = {};
 new Game(1);
 
-var Player = function(id, name, bot = false) {
+var Player = function(id, name, avatar, bot = false) {
   var self = {
     x:250,
     y:250,
     id: id,
     name: name,
+    avatar: avatar,
     online: true,
     state: "healthy",
     closed: false,
@@ -387,7 +409,7 @@ var Player = function(id, name, bot = false) {
     isBot: bot
   }
   self.getBotVote = function() {
-    return (Math.random() < 0.5 ? true : false);
+    return (Math.random() < 0.7 ? true : false);
   }
   self.getBotInfect = function() {
     var curGame = Game.list[self.gameId];
@@ -409,13 +431,13 @@ var Player = function(id, name, bot = false) {
   return self;
 }
 Player.list = {};
-Player.onConnect = function(socket, name, returningPlayer = false) {
+Player.onConnect = function(socket, name, avatar, returningPlayer = false) {
   //Creating player
   if(returningPlayer) {
     var player = Player.list[socket.id];
   }
   else {
-    var player = Player(socket.id, name);
+    var player = Player(socket.id, name, avatar);
   }
   var curGame = Game.list[player.gameId];
 
@@ -475,7 +497,6 @@ Player.onConnect = function(socket, name, returningPlayer = false) {
   //Day
   socket.on("confirmQuarantine", function() {
     if(curGame.hostId == player.id && curGame.phase == 1) {
-      socket.emit("removeHostDay");
       curGame.confirmQuarantine();
     }
   });
@@ -485,6 +506,7 @@ Player.onConnect = function(socket, name, returningPlayer = false) {
       player.agree = decision;
       console.log(player.name + " has voted");
       socket.emit("finishedVoting");
+      Player.updateLobby("voteDone", player);
       curGame.checkVotes();
     }
   });
@@ -530,7 +552,7 @@ Player.onConnect = function(socket, name, returningPlayer = false) {
     if(player.state == "infected" || curGame.win != null) {
       var infectedList = [];
       for(pl in curGame.playerList) {
-        if(curGame.playerList[pl].state == "infected") {
+        if(curGame.playerList[pl].state == "infected" || curGame.playerList[pl].state == "new") {
           infectedList.push(curGame.playerList[pl].name);
           console.log(curGame.playerList[pl].name);
         }
@@ -558,7 +580,7 @@ Player.findPlayerId = function(name) {
   return null;
 }
 Player.createBot = function(name) {
-  var player = Player(Math.random(), name, true);
+  var player = Player(Math.random(), name, -1, true);
   Player.updateLobby("add", player);
 }
 Player.loadLobby = function(socket, showSelf) {
@@ -566,7 +588,8 @@ Player.loadLobby = function(socket, showSelf) {
     if(pl != socket.id || showSelf) {
       var pack = {
         type: "add",
-        name: Player.list[pl].name
+        name: Player.list[pl].name,
+        avatar: Player.list[pl].avatar
       };
       if(Player.list[pl].online || true) {
         socket.emit("playerLobby",pack);
@@ -606,11 +629,14 @@ Player.loadLobby = function(socket, showSelf) {
 Player.updateLobby = function(type, player, isHost) {
   var pack = {
     type: type,
-    name: player.name
+    name: player.name,
   };
   for(var pl in Player.list) {
     if(type == "remove" && player.id == pl) {
       continue;
+    }
+    if(type == "add") {
+      pack.avatar = player.avatar;
     }
     var tempSocket = SOCKET_LIST[pl];
     if(tempSocket != null) {
@@ -624,7 +650,7 @@ Player.updateLobby = function(type, player, isHost) {
 Player.rejoinLoad = function(socket) {
   var curGame = Game.list[Player.list[socket.id].gameId];
   var player = curGame.playerList[socket.id];
-  socket.emit("moveToDay",curGame.hostId == player.id, player.state, curGame.infectedNum, curGame.sickNum, curGame.closedSlots);
+  socket.emit("moveToDay",curGame.hostId == player.id, player.state, curGame.infectedNum, curGame.sickNum, curGame.closedSlots, curGame.round);
   if(curGame.phase == 2) {
     if(curGame.hostId == player.id) {
       socket.emit("removeHostDay");
@@ -703,8 +729,15 @@ function getRandomName() {
   return name.substring(0, Math.min(name.length, 10));
 }
 
-function startNightTimer(game) {
-  setTimeout(function() {
-    game.moveToDay();
-  },20000);
+function startTimer(game, time) {
+  game.timeEnd = (new Date().getTime() + time*1000);
+  var timer = setTimeout(function() {
+    if(game.phase == 3) {
+      game.moveToDay();
+    }
+    else if(game.phase == 1) {
+      game.confirmQuarantine();
+    }
+  },(time*1000));
+  return timer;
 }

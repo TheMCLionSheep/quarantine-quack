@@ -1,6 +1,8 @@
 //Variables
 var endTime = 0;
 var slots = 0;
+var muted = false;
+var chosenAvatar = -1;
 
 //Sounds
 var nightMusic;
@@ -15,6 +17,7 @@ var signInSection;
 var signInInput;
 var signInError;
 var signInButton;
+var avatarSelect;
 
 var rejoinSection;
 
@@ -24,6 +27,9 @@ var disconnectSection;
 var headerSection;
 var headerSickNum;
 var headerInfectedNum;
+var headerRound;
+var headerTimer;
+var muteButton;
 
 //Lobby
 var lobbySection;
@@ -50,7 +56,6 @@ var voteResultsDisagree;
 //Night
 var nightSection;
 var nightInfected;
-var nightTimer;
 
 //End Game
 var endSection;
@@ -59,6 +64,7 @@ function loadGame() {
   variableAssignment();
   addEventListeners();
   loadSounds();
+  populateAvatars();
 }
 
 function variableAssignment() {
@@ -71,6 +77,7 @@ function variableAssignment() {
   signInInput = document.querySelector("#sign-in__input");
   signInError = document.querySelector("#sign-in__error");
   signInButton = document.querySelector("#sign-in__button");
+  avatarSelect = document.querySelector("#avatar-select");
 
   rejoinSection = document.querySelector("#rejoin");
 
@@ -80,6 +87,9 @@ function variableAssignment() {
   headerSection = document.querySelector("#header");
   headerSickNum = document.querySelector("#header__sick-num");
   headerInfectedNum = document.querySelector("#header__infected-num");
+  headerRound = document.querySelector("#header__round");
+  headerTimer = document.querySelector("#header__timer");
+  muteButton = document.querySelector("#mute-button");
 
   //Lobby
   lobbySection = document.querySelector("#lobby");
@@ -107,7 +117,6 @@ function variableAssignment() {
   //Night
   nightSection = document.querySelector("#night");
   nightInfected = document.querySelector("#night__infected");
-  nightTimer = document.querySelector("#night__timer");
 
   //End game
   endSection = document.querySelector("#end");
@@ -131,7 +140,7 @@ function rejoinGame() {
 }
 
 function joinGame() {
-  socket.emit("signInRequest",signInInput.value);
+  socket.emit("signInRequest",signInInput.value,chosenAvatar);
 }
 
 function createPopdown(title, buttonName, onclick, content = null) {
@@ -187,12 +196,40 @@ function rejoinGame() {
   socket.emit('rejoinGame');
 }
 
+function populateAvatars() {
+  for(var i = 0; i < 25; i++) {
+    var button = document.createElement("button");
+    var image = document.createElement("img");
+
+    button.setAttribute("onclick","choseAvatar(" + i + ")");
+    image.setAttribute("src",getIconSrc(i));
+
+    button.appendChild(image);
+    avatarSelect.appendChild(button);
+  }
+  choseAvatar(0);
+}
+
+function choseAvatar(avatar) {
+  var avatarButtons = avatarSelect.getElementsByTagName("button");
+  //Remove previous
+  if(chosenAvatar != -1) {
+    var select = avatarButtons[chosenAvatar].querySelector(".selected");
+    avatarButtons[chosenAvatar].removeChild(select);
+  }
+  var div = document.createElement("div");
+  div.setAttribute("class","selected");
+  avatarButtons[avatar].appendChild(div);
+  chosenAvatar = avatar;
+}
+
+//Sounds
 function loadSounds() {
   nightMusic = createAudio("/client/audio/Dark-Things-2_V001.mp3");
-  nightMusic.volume = 0.5;
+  nightMusic.volume = 0.3;
   nightMusic.playbackRate = 1.5;
   dayMusic = createAudio("/client/audio/City-of-Dread_Looping.mp3");
-  dayMusic.volume = 0.2;
+  dayMusic.volume = 0.1;
   dayMusic.addEventListener("ended", function() {
     dayMusic.play();
   });
@@ -211,6 +248,21 @@ function playSound(sound, isMusic) {
   }
   sound.currentTime = 0;
   sound.play();
+}
+
+function toggleMute() {
+  if(muted) {
+    dayMusic.volume = 0.1;
+    nightMusic.volume = 0.3;
+    muteButton.classList.remove("muted");
+    muted = false;
+  }
+  else {
+    dayMusic.volume = 0;
+    nightMusic.volume = 0;
+    muteButton.classList.add("muted");
+    muted = true;
+  }
 }
 
 //Lobby
@@ -248,6 +300,12 @@ function editPlayerList(actionType, name, icon = null) {
     }
     else if(actionType == "stopHost") {
       adjustStatusIcon(false, "host", playerButton);
+    }
+    else if(actionType == "voteWait") {
+      adjustStatusIcon(true, "vote", playerButton);
+    }
+    else if(actionType == "voteDone") {
+      adjustStatusIcon(false, "vote", playerButton);
     }
     else if(actionType == "voteAgree") {
       adjustStatusIcon(true, "agree", playerButton);
@@ -290,31 +348,45 @@ function adjustStatusIcon(add, status, parent) {
 }
 
 function getIconSrc(icon) {
-  return "/client/images/avatar.png";
+  if(icon == -1) {
+    return "/client/images/characters/bot.png";
+  }
+  else {
+    return "/client/images/characters/character" + icon + ".png";
+  }
 }
 
-function updateDayNum(infectedNum, sickNum, closedNum) {
+function updateDayNum(infectedNum, sickNum, closedNum, roundNum) {
   slots = closedNum;
   headerInfectedNum.innerHTML = infectedNum;
   headerSickNum.innerHTML = sickNum;
   lobbyLimit.innerHTML = "Open Spots: " + slots;
+  headerRound.innerHTML = "Round " + roundNum;
 }
 
 function convertState(state) {
   headerSection.querySelector("h1").innerHTML = "You are: " + state;
 }
 
-function updateNightTimer() {
+function updateTimer() {
   var curTime = new Date().getTime();
   timeLeft = Math.ceil((endTime - curTime)/1000);
-  nightTimer.innerHTML = timeLeft + (timeLeft == 1 ? " second" : " seconds");
-  requestAnimationFrame(updateNightTimer);
+  var seconds = (timeLeft%60)
+  headerTimer.innerHTML = Math.floor(timeLeft/60) + ":" + (seconds < 10 ? "0" + seconds : seconds);
+  if(curTime < endTime) {
+    requestAnimationFrame(updateTimer);
+  }
 }
 
-function startNightTimer(seconds) {
-  nightTimer.innerHTML = seconds + " seconds";
-  endTime = new Date().getTime() + seconds*1000;
-  updateNightTimer();
+function startTimer(seconds) {
+  var time = new Date().getTime();
+  if(endTime < time) {
+    endTime = time + seconds*1000;
+    updateTimer();
+  }
+  else {
+    endTime = time + seconds*1000;
+  }
 }
 
 function showNightResults(healthAdded, sickAdded, infectedAdded, slotGains, infected, winCondition) {
@@ -330,6 +402,12 @@ function showNightResults(healthAdded, sickAdded, infectedAdded, slotGains, infe
   }
   else if(winCondition == "healthy") {
     createPopdown("Healthy win the game!","Finish Game","finishGame();", "All infected were isolated!");
+    endSection.classList.add("active");
+    endSection.querySelector("h1").innerHTML = "Healthy players won!";
+    hostDay.classList.remove("active");
+  }
+  else if(winCondition == "overtime") {
+    createPopdown("Healthy win the game!","Finish Game","finishGame();", "A cure was developed!");
     endSection.classList.add("active");
     endSection.querySelector("h1").innerHTML = "Healthy players won!";
     hostDay.classList.remove("active");
