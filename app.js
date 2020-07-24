@@ -266,7 +266,7 @@ var Game = function(id) {
         game.playerList[pl].toInfect = false;
         tempSocket.emit("nightPhase", game.playerList[pl].state == "infected");
       }
-      if(game.playerList[pl].isBot && !game.playerList[pl].closed) {
+      if(game.playerList[pl].isBot && !game.playerList[pl].closed && game.playerList[pl].state == "infected") {
         game.playerList[pl].toInfect = game.playerList[pl].getBotInfect();
       }
     }
@@ -309,7 +309,6 @@ var Game = function(id) {
           };
           tempSocket.emit("playerLobby", pack);
         }
-        console.log("before:" + game.playerList[pl].toInfect);
 
         var infectedPlayer = Player.findPlayerId(game.playerList[pl].toInfect);
         if(infectedPlayer.state == "healthy") {
@@ -354,11 +353,11 @@ var Game = function(id) {
       if(tempSocket != null) {
         tempSocket.emit("moveToDay", game.hostId == pl, game.playerList[pl].state, game.infectedNum, game.sickNum, game.closedSlots);
         tempSocket.emit("nightResults", infectResult[0], infectResult[1], infectResult[2], game.slotGains, game.playerList[pl].infected == "new", game.win);
-        if(game.playerList[pl].infected == "new") {
+        if(game.playerList[pl].state == "new") {
           game.playerList[pl].state = "infected";
         }
         if(game.playerList[pl].state == "infected") {
-          tempSocket.emit("infectedList", infectedList, sickList);
+          tempSocket.emit("infectedList", infectedList);
           game.playerList[pl].toInfect = false;
         }
       }
@@ -530,6 +529,7 @@ Player.onConnect = function(socket, name, returningPlayer = false) {
       for(pl in curGame.playerList) {
         if(curGame.playerList[pl].state == "infected") {
           infectedList.push(curGame.playerList[pl].name);
+          console.log(curGame.playerList[pl].name);
         }
       }
       socket.emit("infectedList", infectedList);
