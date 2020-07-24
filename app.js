@@ -209,8 +209,6 @@ var Game = function(id) {
     }
   }
   game.resetClosed = function() {
-    game.slotGains += (game.infectedNum + game.sickNum);
-    game.closedSlots += (game.slotGains - game.closedNum);
     for(pl in game.playerList) {
       if(game.playerList[pl].closed) {
         game.playerList[pl].closed = null;
@@ -218,6 +216,10 @@ var Game = function(id) {
       }
     }
     game.closedNum = 0;
+  }
+  game.adjustSlots = function() {
+    game.slotGains += (game.infectedNum + game.sickNum);
+    game.closedSlots += (game.slotGains - game.closedNum);
     game.slotGains = 0;
   }
   game.resetVotes = function() {
@@ -266,7 +268,7 @@ var Game = function(id) {
         game.playerList[pl].toInfect = false;
         tempSocket.emit("nightPhase", game.playerList[pl].state == "infected");
       }
-      if(game.playerList[pl].isBot && !game.playerList[pl].closed && game.playerList[pl].state == "infected") {
+      if(game.playerList[pl].isBot && !game.playerList[pl].closed) {
         game.playerList[pl].toInfect = game.playerList[pl].getBotInfect();
       }
     }
@@ -327,6 +329,7 @@ var Game = function(id) {
     //Reset for next round
     game.round++;
     game.phase = 1;
+    game.adjustSlots();
     game.resetClosed();
     Player.updateLobby("stopHost", game.playerList[game.hostId]);
     game.hostId = game.findNextLeader();
@@ -384,7 +387,7 @@ var Player = function(id, name, bot = false) {
     isBot: bot
   }
   self.getBotVote = function() {
-    return (Math.random() < 0.8 ? true : false);
+    return (Math.random() < 0.5 ? true : false);
   }
   self.getBotInfect = function() {
     var curGame = Game.list[self.gameId];
