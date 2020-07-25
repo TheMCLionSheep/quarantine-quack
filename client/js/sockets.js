@@ -172,11 +172,13 @@ socket.on("nightResults", function(healthAdded, sickAdded, infectedAdded, slotGa
 
 //End game
 socket.on("infectedList", function(infectedList) {
-  console.log(infectedList);
   for(var i = 0; i < infectedList.length; i++) {
     editPlayerList("infected", infectedList[i]);
   }
 });
 socket.on("endGameButton", function() {
   hostEndGame.classList.add("active");
+});
+socket.on("resetGame", function() {
+  resetGame();
 })

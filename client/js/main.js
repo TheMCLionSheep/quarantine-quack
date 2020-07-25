@@ -254,12 +254,14 @@ function toggleMute() {
   if(muted) {
     dayMusic.muted = false;
     nightMusic.muted = false;
+    buttonPress.muted = false;
     muteButton.classList.remove("muted");
     muted = false;
   }
   else {
     dayMusic.muted = true;
     nightMusic.muted = true;
+    buttonPress.muted = true;
     muteButton.classList.add("muted");
     muted = true;
   }
@@ -419,6 +421,25 @@ function showNightResults(healthAdded, sickAdded, infectedAdded, slotGains, infe
 
 function finishGame() {
   closePopdown(basicPopdown);
+  startTimer(0);
   socket.emit("requestInfected");
   socket.emit("endGameButton");
+}
+
+function resetGame() {
+  updateDayNum(0,0,0,0);
+  convertState("healthy");
+
+  var openChildren = lobbyOpenList.getElementsByTagName('button');
+  while(openChildren.length > 0) {
+    lobbyOpenList.removeChild(openChildren[0]);
+  }
+  var closedChildren = lobbyClosedList.getElementsByTagName('button');
+  while(closedChildren.length > 0) {
+    lobbyClosedList.removeChild(closedChildren[0]);
+  }
+  hostBecome.classList.add("active");
+  hostEndGame.classList.remove("active");
+  endSection.classList.remove("active");
+  nightInfected.classList.remove("active");
 }

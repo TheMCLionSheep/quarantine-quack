@@ -23,6 +23,8 @@ var names = require('./server/first-name.json');
 
 var SOCKET_LIST = {};
 
+var curGameId = 1;
+
 var io = require("socket.io") (serv,{});
 io.sockets.on("connection", function(socket) {
   socket.on("login", function(savedID) {
@@ -46,7 +48,7 @@ io.sockets.on("connection", function(socket) {
     })
 
     socket.on("signInRequest", function(name, avatar) {
-      if(Game.list[1].round == 0) {
+      if(Game.list[curGameId].round == 0) {
         if(name.length > 10) {
           socket.emit("signInReject","*Max character length of 10!");
         }
@@ -283,7 +285,7 @@ var Game = function(id) {
     if(checkQuarantine) {
       game.win = "healthy";
     }
-    if(game.round >= 8) {
+    if(game.round >= 2) {
       game.win = "overtime"
     }
 
@@ -392,13 +394,32 @@ var Game = function(id) {
       }
     }
   }
+  game.endGame = function() {
+    curGameId++;
+    new Game(curGameId);
+    for(pl in game.playerList) {
+      var tempSocket = SOCKET_LIST[pl];
+      var player = game.playerList[pl];
+      if(tempSocket != null) {
+        tempSocket.emit("resetGame");
+        player.newGame(curGameId);
+      }
+    }
+
+    for(pl in game.playerList) {
+      var tempSocket = SOCKET_LIST[pl];
+      if(tempSocket != null) {
+        Player.loadLobby(tempSocket,true);
+      }
+    }
+  }
   Game.list[id] = game;
   return game;
 }
 Game.list = {};
-new Game(1);
+new Game(curGameId);
 
-var Player = function(id, name, avatar, bot = false) {
+var Player = function(id, name, avatar, game, bot = false) {
   var self = {
     x:250,
     y:250,
@@ -410,8 +431,16 @@ var Player = function(id, name, avatar, bot = false) {
     closed: false,
     agree: null,
     toInfect: false,
-    gameId: 1,
+    gameId: game,
     isBot: bot
+  }
+  self.newGame = function(gameId) {
+    self.state = "healthy";
+    self.closed = false;
+    self.agree = null;
+    self.toInfect = null;
+    self.gameId = gameId;
+    Game.list[gameId].playerList[id] = self;
   }
   self.getBotVote = function() {
     return (Math.random() < 0.7 ? true : false);
@@ -442,11 +471,10 @@ Player.onConnect = function(socket, name, avatar, returningPlayer = false) {
     var player = Player.list[socket.id];
   }
   else {
-    var player = Player(socket.id, name, avatar);
+    var player = Player(socket.id, name, avatar, curGameId);
   }
-  var curGame = Game.list[player.gameId];
 
-  socket.emit("joinGame", curGame.hostId != 0, curGame.round != 0);
+  socket.emit("joinGame", Game.list[player.gameId].hostId != 0, Game.list[player.gameId].round != 0);
 
   //Loading lobby
   if(returningPlayer) {
@@ -462,8 +490,9 @@ Player.onConnect = function(socket, name, avatar, returningPlayer = false) {
 
   //Sockets
   socket.on("updateLobby", function(actionType, name) {
+    var curGame = Game.list[player.gameId];
     if(actionType == "moveToClosed" || actionType == "moveToOpen") {
-      if(curGame.round != 0 && curGame.hostId == player.id && curGame.phase == 1) {
+      if(curGame.round != 0 && curGame.hostId == player.id && curGame.phase == 1 && curGame.win == null) {
         if(actionType == "moveToClosed" && curGame.closedNum < curGame.closedSlots) {
           curGame.closedNum++;
           var pl = Player.findPlayerId(name);
@@ -481,6 +510,7 @@ Player.onConnect = function(socket, name, avatar, returningPlayer = false) {
   });
 
   socket.on("becomeHost", function(become) {
+    var curGame = Game.list[player.gameId];
     if(curGame.hostId == 0 && become) {
       curGame.hostId = player.id;
       Player.updateLobby("host", player, true);
@@ -494,6 +524,7 @@ Player.onConnect = function(socket, name, avatar, returningPlayer = false) {
   });
 
   socket.on("startGame", function() {
+    var curGame = Game.list[player.gameId];
     if(curGame.hostId == player.id) {
       curGame.startGame();
     }
@@ -501,12 +532,14 @@ Player.onConnect = function(socket, name, avatar, returningPlayer = false) {
 
   //Day
   socket.on("confirmQuarantine", function() {
+    var curGame = Game.list[player.gameId];
     if(curGame.hostId == player.id && curGame.phase == 1) {
       curGame.confirmQuarantine();
     }
   });
 
   socket.on("voteDecision", function(decision) {
+    var curGame = Game.list[player.gameId];
     if(curGame.phase == 2 && player.agree === null) {
       player.agree = decision;
       console.log(player.name + " has voted");
@@ -517,12 +550,14 @@ Player.onConnect = function(socket, name, avatar, returningPlayer = false) {
   });
 
   socket.on("moveToNight", function() {
+    var curGame = Game.list[player.gameId];
     if(curGame.hostId == player.id && curGame.phase == 2 && curGame.vote == true) {
       socket.emit("removeHostVote");
       curGame.moveToNight();
     }
   });
   socket.on("passLeadership", function() {
+    var curGame = Game.list[player.gameId];
     if(curGame.hostId == player.id && curGame.phase == 2 && curGame.vote == false) {
       socket.emit("removeHostVote");
       curGame.passLeadership();
@@ -531,6 +566,7 @@ Player.onConnect = function(socket, name, avatar, returningPlayer = false) {
 
   //Night
   socket.on("infectPlayer", function(name) {
+    var curGame = Game.list[player.gameId];
     if(curGame.phase == 3 && player.state == "infected") {
       var plInfect = Player.findPlayerId(name);
       if(plInfect != player && !plInfect.closed && plInfect.state != "infected" && !player.closed) {
@@ -554,12 +590,12 @@ Player.onConnect = function(socket, name, avatar, returningPlayer = false) {
 
   //End game
   socket.on("requestInfected", function() {
+    var curGame = Game.list[player.gameId];
     if(player.state == "infected" || curGame.win != null) {
       var infectedList = [];
       for(pl in curGame.playerList) {
         if(curGame.playerList[pl].state == "infected" || curGame.playerList[pl].state == "new") {
           infectedList.push(curGame.playerList[pl].name);
-          console.log(curGame.playerList[pl].name);
         }
       }
       socket.emit("infectedList", infectedList);
@@ -567,13 +603,17 @@ Player.onConnect = function(socket, name, avatar, returningPlayer = false) {
   });
 
   socket.on("endGameButton", function() {
+    var curGame = Game.list[player.gameId];
     if(player.id == curGame.hostId && curGame.win != null) {
       socket.emit("endGameButton");
     }
   })
 
   socket.on("endGame", function() {
-    console.log("TODO");
+    var curGame = Game.list[player.gameId];
+    if(player.id == curGame.hostId && curGame.win != null) {
+      curGame.endGame();
+    }
   });
 }
 Player.findPlayerId = function(name) {
@@ -585,11 +625,11 @@ Player.findPlayerId = function(name) {
   return null;
 }
 Player.createBot = function(name) {
-  var player = Player(Math.random(), name, -1, true);
+  var player = Player(Math.random(), name, -1, curGameId, true);
   Player.updateLobby("add", player);
 }
 Player.loadLobby = function(socket, showSelf) {
-  for(var pl in Player.list) {
+  for(var pl in Game.list[Player.list[socket.id].gameId].playerList) {
     if(pl != socket.id || showSelf) {
       var pack = {
         type: "add",

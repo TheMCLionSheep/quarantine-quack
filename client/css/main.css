@@ -374,6 +374,9 @@ section.active {
 #night #night__infected {
   display: none;
 }
+#night #night__infected h1 {
+  padding: 10px;
+}
 #night #night__infected.active {
   display: block;
 }
