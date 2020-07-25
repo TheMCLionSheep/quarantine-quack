@@ -285,7 +285,7 @@ var Game = function(id) {
     if(checkQuarantine) {
       game.win = "healthy";
     }
-    if(game.round >= 2) {
+    if(game.round >= 8) {
       game.win = "overtime"
     }
 
