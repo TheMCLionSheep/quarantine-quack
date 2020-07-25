@@ -16,6 +16,12 @@ h1, h2 {
   margin: 0;
   font-family: 'Permanent Marker', cursive;
 }
+h1 {
+  font-size: 36px;
+}
+h2 {
+  font-size: 30px;
+}
 p {
   margin: 0;
   font-family: 'Architects Daughter', cursive;
@@ -197,6 +203,7 @@ section.active {
 #header #header__container {
   position: relative;
   color: #660000;
+  font-size: 0;
 }
 #header #header__container h1 {
   margin: 0;
@@ -208,6 +215,7 @@ section.active {
   top: 50%;
   right: 50px;
   transform: translateY(-50%);
+  font-size: 0;
 }
 #header #header__container h2 {
   display: inline-block;
@@ -235,16 +243,13 @@ section.active {
   transform: translateY(-50%);
 }
 #header #header__container #mute-button:hover {
-  background: url("/client/images/unmuted-hover.png") repeat repeat center center;
-  background-size: 100% 100%;
+  background-image: url("/client/images/unmuted-hover.png");
 }
 #header #header__container #mute-button.muted {
-  background: url("/client/images/muted.png") repeat repeat center center;
-  background-size: 100% 100%;
+  background-image: url("/client/images/muted.png");
 }
 #header #header__container #mute-button.muted:hover {
-  background: url("/client/images/muted-hover.png") repeat repeat center center;
-  background-size: 100% 100%;
+  background-image: url("/client/images/muted-hover.png");
 }
 
 /* Lobby */
@@ -378,6 +383,128 @@ section.active {
   padding: 30px 0;
 }
 
-@media only screen and (max-width: 600px) {
-  
+@media only screen and (max-width: 768px) {
+  h1 {
+    font-size: 4.7vw;
+  }
+  h2 {
+    font-size: 4vw;
+  }
+
+  .container .chains {
+    transform: translate(-50%, -200%);
+  }
+  .container .chains img {
+    width: 35px;
+    height: 8px;
+  }
+
+  #sign-in .prompt-input input{
+    width: 70%;
+    font-size: 4vw;
+  }
+
+  #header #header__container h1 {
+    padding-bottom: 1.3vw;
+    font-size: 5.2vw;
+  }
+  #header #header__container #header__counter {
+    right: 3vw;
+    transform: translateY(-50%);
+  }
+  #header #header__container h2 {
+    font-size: 3vw;
+  }
+  #header #header__container #header__round, #header #header__container #header__timer {
+    font-size: 4vw;
+    line-height: 4vw;
+    padding-top: 1.3vw;
+  }
+  #header #header__container #header__round {
+    padding-right: 6.5vw;
+  }
+  #header #header__container #mute-button {
+    left: 2.6vw;
+    width: 13vw;
+    height: 13vw;
+  }
+
+  #lobby #lobby__closed-list #lobby__limit{
+    padding-left: 7vw;
+  }
+}
+
+@media only screen and (max-width: 425px) {
+  .popdown {
+    background-size: 89vw;
+    width: 64vw;
+    height: 51vw;
+    padding: 40vw 11vw 6vw;
+  }
+  .popdown h1 {
+    padding: 2vw;
+    font-size: 6.5vw;
+    line-height: 7vw;
+  }
+  .popdown p {
+    font-size: 4.5vw;
+    padding: 0px 2vw;
+  }
+  .popdown button {
+    margin: 2vw auto;
+  }
+
+  .wooden-button {
+    width: 100px;
+    height: 45px;
+    font-size: 12px;
+    outline: none;
+  }
+  .wooden-button.long {
+    width: 150px;
+  }
+
+  #avatar-select button {
+    margin: 6px;
+    width: 60px;
+    height: 60px;
+    padding: 0;
+    border: none;
+    font-size: 11px;
+    line-height: 11px;
+    outline: none;
+  }
+  #avatar-select button .selected {
+    width: 90px;
+    height: 90px;
+  }
+
+  #credits p {
+    font-size: 4.5vw;
+  }
+
+  #lobby .player-list button {
+    margin: 6px;
+    width: 60px;
+    height: 60px;
+    font-size: 10px;
+    line-height: 10px;
+  }
+  #lobby .player-list button img {
+    height: 30px;
+    padding-bottom: 3px;
+  }
+  #lobby .player-list button .status {
+    width: 12px;
+    height: 12px;
+    border-radius: 6px;
+  }
+  #lobby .player-list button .status.host {
+    width: 18px;
+    height: 18px;
+  }
+  #lobby .player-list button .status.chosen{
+    width: 90px;
+    height: 90px;
+  }
 }
