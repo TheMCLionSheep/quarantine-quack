@@ -106,7 +106,7 @@ var Game = function(id) {
   }
   game.startGame = function () {
     //Create Bots
-    for(var i = size(game.playerList); i < 10; i++) {
+    for(var i = size(game.playerList); i < 50; i++) {
       while(true) {
         var isValid = true;
         var randomName = getRandomName();
