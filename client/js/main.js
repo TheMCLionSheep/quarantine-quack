@@ -24,6 +24,8 @@ var rejoinSection;
 
 var disconnectSection;
 
+var tutorialSection;
+
 //Header
 var headerSection;
 var headerSickNum;
@@ -83,6 +85,8 @@ function variableAssignment() {
   rejoinSection = document.querySelector("#rejoin");
 
   disconnectSection = document.querySelector("#disconnect");
+
+  tutorialSection = document.querySelector("#tutorial");
 
   //Header
   headerSection = document.querySelector("#header");
@@ -265,6 +269,17 @@ function toggleMute() {
     muteButton.classList.add("muted");
     muted = true;
   }
+}
+
+//Tutorial
+function showTutorial() {
+  tutorialSection.classList.add("active");
+  signInSection.classList.remove("active");
+}
+
+function leaveTutorial() {
+  tutorialSection.classList.remove("active");
+  signInSection.classList.add("active");
 }
 
 //Lobby

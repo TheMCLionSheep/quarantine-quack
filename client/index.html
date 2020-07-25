@@ -50,6 +50,7 @@
             <img src="/client/images/chains.png" alt="">
           </div>
           <button id="sign-in__button" onclick="playSound(buttonPress); joinGame()" class="wooden-button">Join Game!</button>
+          <button onclick="showTutorial();" class="wooden-button">How to Play?</button>
         </div>
         <div class="container" id="credits">
           <div class="chains">
@@ -63,6 +64,44 @@
           <p>Music and Sounds: Music by Eric Matyas | www.soundimage.org</p>
           <p>Help and Testing: Aidan, Jaimee, Elena, Amanda, Rachel, Matthew, Ethan, Bean, and Cooper</p>
         </div>
+      </section>
+
+      <section id="tutorial" class="container">
+        <div class="chains">
+          <img src="/client/images/chains.png" alt="">
+          <img src="/client/images/chains.png" alt="">
+        </div>
+        <h1>Welcome to Quarantine Quibble!</h1>
+        <h2>Teams</h2>
+        <p>
+          There are 2 teams in the game, healthy and infected. The healthy will make up the majority of players, whose goal is to guess the infected. The infected are the minority and must stay hidden and increase their population.
+        </p>
+        <h2>Goals</h2>
+        <p>
+          The healthy can win in 2 ways. First, they can isolate all infected and sick into quarantine without any additional healthy members isolated. Secondly, they can develop a cure to combat the infected.
+          <br>
+          The infected win by infecting 50% of the population. This doesn't include the sick, 50% must be in the infected state.
+        </p>
+        <h2>Health</h2>
+        <p>
+          All players can have 3 health states, healthy, sick, or infected.
+          Healthy and infected encompass their respective groups. However, sick is part of the healthy group but is in the process of being converted to infected. Infected players can infect other healthy players to make them sick. Without treatment, (going to quarantine), sick players will become infected, and switch alliance. However, receiving treatment will allow sick players to become healthy again. However, sick players never know when they are sick, only when they become infected. Therefore players must deduce who could be sick in a game.
+        </p>
+        <h2>Gameplay</h2>
+        <p>
+          Each round is made of 3 phases, day, vote, and night.
+          <br>
+          In the day phase, a player becomes mayor, and can chose to quarantine a number of players, depending on the number of available slots in quarantine. The decision will be made based on prior knowledge and the advice of other players. After the mayor has chosen a group and confirmed, players move to the voting phase. If a group isn't chosen within 5 minutes, the game will move to the voting phase anyway.
+          <br>
+          In the voting phase, players vote on the group going to quarantine. If the majority disagrees, a new player is assigned mayor, and it moves back to the day phase. If the majority agrees, the game moves to the night phase with the quarantined group. 5 disagreements in a row will result in no players going to quarantine.
+          <br>
+          In the night phase, players can perform actions depending on their role. Any infected players that are not in quarantine, can choose to infect another player not in quarantine. Doing so will cause the player to become sick. The tester can test any player in quarantine, which will give back test results. The researcher can develop or sabotage the cure if they are not in quarantine. After the night phase, results of the night will be shown and the next round will start at the day phase.
+        </p>
+        <h2>Slots</h2>
+        <p>
+          Each round, a number of slots are available for quarantine. Unused slots will carry over to proceding rounds. Slots are additionally gained each round by calculating the number of infected and sick people, plus any healed sick.
+        </p>
+        <button onclick="leaveTutorial();" class="wooden-button">Back</button>
       </section>
 
       <section id="rejoin">
