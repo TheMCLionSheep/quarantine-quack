@@ -32,6 +32,7 @@ var headerSickNum;
 var headerInfectedNum;
 var headerRound;
 var headerTimer;
+var headerCure;
 var muteButton;
 
 //Lobby
@@ -59,6 +60,9 @@ var voteResultsDisagree;
 //Night
 var nightSection;
 var nightInfected;
+var nightResearch;
+var nightResearchInfect;
+var sabotageButton;
 
 //End Game
 var endSection;
@@ -94,6 +98,7 @@ function variableAssignment() {
   headerInfectedNum = document.querySelector("#header__infected-num");
   headerRound = document.querySelector("#header__round");
   headerTimer = document.querySelector("#header__timer");
+  headerCure = document.querySelector("#header__cure");
   muteButton = document.querySelector("#mute-button");
 
   //Lobby
@@ -122,6 +127,9 @@ function variableAssignment() {
   //Night
   nightSection = document.querySelector("#night");
   nightInfected = document.querySelector("#night__infected");
+  nightResearch = document.querySelector("#night__research");
+  nightResearchInfect = document.querySelector("#night__research--infected");
+  sabotageButton = document.querySelector("#sabotage-button");
 
   //End game
   endSection = document.querySelector("#end");
@@ -318,6 +326,12 @@ function editPlayerList(actionType, name, icon = null) {
     else if(actionType == "stopHost") {
       adjustStatusIcon(false, "host", playerButton);
     }
+    else if(actionType == "cure") {
+      adjustStatusIcon(true, "cure", playerButton);
+    }
+    else if(actionType == "notCure") {
+      adjustStatusIcon(false, "cure", playerButton);
+    }
     else if(actionType == "voteWait") {
       adjustStatusIcon(true, "vote", playerButton);
     }
@@ -373,12 +387,13 @@ function getIconSrc(icon) {
   }
 }
 
-function updateDayNum(infectedNum, sickNum, closedNum, roundNum) {
+function updateDayNum(infectedNum, sickNum, closedNum, roundNum, cureNum) {
   slots = closedNum;
   headerInfectedNum.innerHTML = infectedNum;
   headerSickNum.innerHTML = sickNum;
   lobbyLimit.innerHTML = "Open Spots: " + slots;
   headerRound.innerHTML = "Round " + roundNum;
+  headerCure.innerHTML = "Cure: " + cureNum + "/5";
 }
 
 function convertState(state) {
@@ -409,10 +424,34 @@ function startTimer(seconds) {
   }
 }
 
-function showNightResults(healthAdded, sickAdded, infectedAdded, slotGains, infected, winCondition) {
+function selectSabotage(selected) {
+  if(selected) {
+    if(sabotageButton.querySelector(".chosen") == null) {
+      var span = document.createElement("span");
+      span.setAttribute("class","chosen");
+
+      sabotageButton.appendChild(span);
+    }
+  }
+  else {
+    var chosen = sabotageButton.querySelector(".chosen");
+    if(chosen != null) {
+      sabotageButton.removeChild(chosen);
+    }
+  }
+}
+
+function showNightResults(healthAdded, sickAdded, infectedAdded, slotGains, infected, cureAttempt, winCondition) {
+  var cureNews = "";
+  if(cureAttempt == true) {
+    var cureNews = " The cure has developed!";
+  }
+  else if(cureAttempt == false) {
+    var cureNews = " The cure was sabotaged!";
+  }
   if(winCondition == null) {
     var gainNum = (slotGains == 1) ? " slot!" : " slots!"
-    createPopdown("Quarantine gained " + slotGains + gainNum ,"Continue","getNextPopdown('nightResults'," + infected + ")","There were " + healthAdded + " players healed, " + sickAdded + " players got sick, and " + infectedAdded + " players got infected!");
+    createPopdown("Quarantine gained " + slotGains + gainNum ,"Continue","getNextPopdown('nightResults'," + infected + ")","There were " + healthAdded + " players healed, " + sickAdded + " players got sick, and " + infectedAdded + " players got infected!" + cureNews);
   }
   else if(winCondition == "infect") {
     createPopdown("Infected win the game!","Finish Game","finishGame();", (infectedAdded == 1 ? infectedAdded + " player was infected!" : infectedAdded + " players were infected!"));
@@ -442,7 +481,7 @@ function finishGame() {
 }
 
 function resetGame() {
-  updateDayNum(0,0,0,0);
+  updateDayNum(0,0,0,0,0);
   convertState("healthy");
 
   var openChildren = lobbyOpenList.getElementsByTagName('button');

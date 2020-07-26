@@ -127,6 +127,7 @@
           </div>
           <h2 id="header__round">Round 0</h2>
           <h2 id="header__timer">0:00</h2>
+          <h2 id="header__cure">Cure: 0/5</h2>
           <h1>You are: HEALTHY</h1>
           <div id="header__counter">
             <h2>Sick: </h2>
@@ -252,6 +253,24 @@
             <img src="/client/images/chains.png" alt="">
           </div>
           <h1>Click a player to infect!</h1>
+        </div>
+        <div id="night__research" class="container">
+          <div class="chains">
+            <img src="/client/images/chains.png" alt="">
+            <img src="/client/images/chains.png" alt="">
+          </div>
+          <h1>Work on the cure!</h1>
+          <button class="wooden-button" onclick="playSound(buttonPress); socket.emit('workOnCure',true);">Develop Cure</button>
+        </div>
+        <div id="night__research--infected" class="container">
+          <div class="chains">
+            <img src="/client/images/chains.png" alt="">
+            <img src="/client/images/chains.png" alt="">
+          </div>
+          <h2>Click a player to infect</h2>
+          <h1>OR</h1>
+          <h2>sabotage the cure!</h2>
+          <button id="sabotage-button" class="wooden-button" onclick="playSound(buttonPress); socket.emit('workOnCure',false);">Sabotage Cure</button>
         </div>
       </section>
     </article>

@@ -158,8 +158,8 @@ section.active {
 }
 #avatar-select button .selected {
   position: absolute;
-  width: 150px;
-  height: 150px;
+  width: 120%;
+  height: 120%;
   background: url("/client/images/drawn_circle.png") no-repeat no-repeat center center;
   background-size: cover;
   top: 50%;
@@ -221,14 +221,15 @@ section.active {
   display: inline-block;
   font-size: 20px;
 }
-#header #header__container #header__round, #header #header__container #header__timer {
+#header #header__container #header__round, #header #header__container #header__timer, #header #header__container #header__cure {
   display: inline-block;
   font-size: 24px;
   line-height: 24px;
   padding-top: 10px;
 }
-#header #header__container #header__round {
-  padding-right: 50px;
+#header #header__container #header__timer {
+  padding-left: 30px;
+  padding-right: 30px;
 }
 #header #header__container #mute-button {
   position: absolute;
@@ -310,6 +311,15 @@ section.active {
   left: 50%;
   transform: translate(-50%, -50%);
 }
+#lobby .player-list button .status.cure {
+  width: 30px;
+  height: 30px;
+  background: url("/client/images/cure.svg") no-repeat no-repeat center center;
+  background-size: contain;
+  border-radius: 0;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
 #lobby .player-list button .status.vote {
   background: url("/client/images/minus-tick.svg") no-repeat no-repeat center center rgb(255,255,255);
   background-size: cover;
@@ -326,8 +336,8 @@ section.active {
   background: orange;
 }
 #lobby .player-list button .status.chosen{
-  width: 150px;
-  height: 150px;
+  width: 120%;
+  height: 120%;
   background: url("/client/images/drawn_circle.png") no-repeat no-repeat center center;
   background-size: cover;
   top: 50%;
@@ -354,7 +364,24 @@ section.active {
 }
 
 /* Night */
+#night .popdown {
+  display: none;
+}
+#night .popdown.active {
+  display: block;
+}
+#night > div {
+  display: none;
+}
+#night #night__infected h1 {
+  padding: 10px;
+}
+#night > div.active {
+  display: block;
+}
+
 #night #night__scrim {
+  display: block;
   position: fixed;
   width: 100vw;
   height: 100vh;
@@ -365,20 +392,18 @@ section.active {
   z-index: 10;
 }
 
-#night .popdown {
-  display: none;
+#sabotage-button {
+  position: relative;
 }
-#night .popdown.active {
-  display: block;
-}
-#night #night__infected {
-  display: none;
-}
-#night #night__infected h1 {
-  padding: 10px;
-}
-#night #night__infected.active {
-  display: block;
+#sabotage-button .chosen {
+  position: absolute;
+  width: 120%;
+  height: 120%;
+  background: url("/client/images/drawn_oval.png") no-repeat no-repeat center center;
+  background-size: contain;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
 }
 
 #end h1{
@@ -418,13 +443,14 @@ section.active {
   #header #header__container h2 {
     font-size: 3vw;
   }
-  #header #header__container #header__round, #header #header__container #header__timer {
-    font-size: 4vw;
+  #header #header__container #header__round, #header #header__container #header__timer, #header #header__container #header__cure {
+    font-size: 3vw;
     line-height: 4vw;
     padding-top: 1.3vw;
   }
-  #header #header__container #header__round {
-    padding-right: 6.5vw;
+  #header #header__container #header__timer {
+    padding-right: 4vw;
+    padding-left: 4vw;
   }
   #header #header__container #mute-button {
     left: 2.6vw;
@@ -502,12 +528,8 @@ section.active {
     height: 12px;
     border-radius: 6px;
   }
-  #lobby .player-list button .status.host {
+  #lobby .player-list button .status.host,#lobby .player-list button .status.cure {
     width: 18px;
     height: 18px;
-  }
-  #lobby .player-list button .status.chosen{
-    width: 90px;
-    height: 90px;
   }
 }

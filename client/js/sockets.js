@@ -53,7 +53,7 @@ socket.on("saveID", function(id) {
 });
 
 //Lobby
-socket.on("moveToDay", function(isHost, healthState, infectedNum, sickNum, closedNum, roundNum) {
+socket.on("moveToDay", function(isHost, healthState, infectedNum, sickNum, closedNum, roundNum, cureNum) {
   playSound(dayMusic, true);
   startTimer(300);
   if(isHost) {
@@ -67,7 +67,7 @@ socket.on("moveToDay", function(isHost, healthState, infectedNum, sickNum, close
     healthState = "infected";
   }
   convertState(healthState);
-  updateDayNum(infectedNum, sickNum, closedNum, roundNum);
+  updateDayNum(infectedNum, sickNum, closedNum, roundNum, cureNum);
 });
 
 socket.on("playerLobby", function(packet) {
@@ -154,21 +154,36 @@ socket.on("removeHostVote", function() {
 });
 
 //Night
-socket.on("nightPhase", function(isInfected) {
+socket.on("nightPhase", function(isInfected, role, closed) {
   playSound(nightMusic, true);
   voteSection.classList.remove("active");
   voteResults.classList.remove("active");
   nightSection.classList.add("active");
   createPopdown("It's night time!","Continue","closePopdown(this.parentNode)","Any infected that aren't in quarantine can infect players in the open.");
   startTimer(20);
-  if(isInfected) {
+  nightInfected.classList.remove("active");
+  nightResearch.classList.remove("active");
+  nightResearchInfect.classList.remove("active");
+  if(isInfected && role == "research" && !closed) {
+    nightResearchInfect.classList.add("active");
+  }
+  else if(isInfected && !closed) {
     nightInfected.classList.add("active");
   }
+  else if(role == "research" && !closed) {
+    nightResearch.classList.add("active");
+  }
 });
-socket.on("nightResults", function(healthAdded, sickAdded, infectedAdded, slotGains, infected, winCondition) {
+socket.on("nightResults", function(healthAdded, sickAdded, infectedAdded, slotGains, infected, cureAttempt, winCondition) {
   nightSection.classList.remove("active");
-  showNightResults(healthAdded, sickAdded, infectedAdded, slotGains, infected, winCondition);
+  showNightResults(healthAdded, sickAdded, infectedAdded, slotGains, infected, cureAttempt, winCondition);
 });
+socket.on("hideResearch", function() {
+  nightResearch.classList.remove("active");
+})
+socket.on("sabotageCure", function(selected) {
+  selectSabotage(selected);
+})
 
 //End game
 socket.on("infectedList", function(infectedList) {
