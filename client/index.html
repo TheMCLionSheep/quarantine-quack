@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
     <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
     <meta name="HandheldFriendly" content="true">
-    <title>Quarantine Game</title>
+    <title>Quarantine Quack</title>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.3.0/socket.io.js"></script>
 
@@ -259,18 +259,10 @@
             <img src="/client/images/chains.png" alt="">
             <img src="/client/images/chains.png" alt="">
           </div>
-          <h1>Work on the cure!</h1>
-          <button class="wooden-button" onclick="playSound(buttonPress); socket.emit('workOnCure',true);">Develop Cure</button>
-        </div>
-        <div id="night__research--infected" class="container">
-          <div class="chains">
-            <img src="/client/images/chains.png" alt="">
-            <img src="/client/images/chains.png" alt="">
-          </div>
-          <h2>Click a player to infect</h2>
+          <h2 id="night__research--infected">Click a player to test!</h2>
           <h1>OR</h1>
-          <h2>sabotage the cure!</h2>
-          <button id="sabotage-button" class="wooden-button" onclick="playSound(buttonPress); socket.emit('workOnCure',false);">Sabotage Cure</button>
+          <h1>Work on the cure!</h1>
+          <button id="research-button" class="wooden-button" onclick="playSound(buttonPress); socket.emit('workOnCure');">Develop Cure</button>
         </div>
       </section>
     </article>

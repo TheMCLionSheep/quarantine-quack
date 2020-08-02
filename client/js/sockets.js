@@ -32,16 +32,6 @@ socket.on("joinGame", function(host, started) {
   if(!started && !host) {
     hostBecome.classList.add("active");
   }
-  // if(host) {
-  //   hostBtn.classList.remove("active");
-  // }
-  // else {
-  //   hostBtn.classList.add("active");
-  // }
-  // if(started) {
-  //   waitingInfo.innerHTML = "Game in progress...";
-  // }
-  //curButton = null;
 });
 
 socket.on("startingPopdown", function(isInfected, infectedNum) {
@@ -87,8 +77,8 @@ socket.on("retryDay", function(isHost) {
 });
 
 //Host
-socket.on("updateHost", function (packet) {
-  var playerButton = document.querySelector("#open-list-name--" + name);
+socket.on("updateHost", function(packet) {
+  var playerButton = document.querySelector("#open-list-name--" + packet.name);
   if(packet.type == "host") {
     hostBecome.classList.remove("active");
   }
@@ -165,24 +155,23 @@ socket.on("nightPhase", function(isInfected, role, closed) {
   nightResearch.classList.remove("active");
   nightResearchInfect.classList.remove("active");
   if(isInfected && role == "research" && !closed) {
-    nightResearchInfect.classList.add("active");
+    nightResearch.classList.add("active");
+    nightResearchInfect.innerHTML = "Click a player to infect!";
   }
   else if(isInfected && !closed) {
     nightInfected.classList.add("active");
   }
   else if(role == "research" && !closed) {
     nightResearch.classList.add("active");
+    nightResearchInfect.innerHTML = "Click a player to test!";
   }
 });
-socket.on("nightResults", function(healthAdded, sickAdded, infectedAdded, slotGains, infected, cureAttempt, winCondition) {
+socket.on("nightResults", function(healthAdded, sickAdded, infectedAdded, slotGains, infected, cureAttempt, testResult, winCondition) {
   nightSection.classList.remove("active");
-  showNightResults(healthAdded, sickAdded, infectedAdded, slotGains, infected, cureAttempt, winCondition);
+  showNightResults(healthAdded, sickAdded, infectedAdded, slotGains, infected, cureAttempt, testResult, winCondition);
 });
-socket.on("hideResearch", function() {
-  nightResearch.classList.remove("active");
-})
-socket.on("sabotageCure", function(selected) {
-  selectSabotage(selected);
+socket.on("developResearch", function(selected) {
+  selectResearch(selected);
 })
 
 //End game

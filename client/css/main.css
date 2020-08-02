@@ -392,10 +392,10 @@ section.active {
   z-index: 10;
 }
 
-#sabotage-button {
+#research-button {
   position: relative;
 }
-#sabotage-button .chosen {
+#research-button .chosen {
   position: absolute;
   width: 120%;
   height: 120%;

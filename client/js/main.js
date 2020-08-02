@@ -3,6 +3,7 @@ var endTime = 0;
 var slots = 0;
 var muted = false;
 var chosenAvatar = -1;
+var testResultGlobal = null;
 
 //Sounds
 var nightMusic;
@@ -62,7 +63,7 @@ var nightSection;
 var nightInfected;
 var nightResearch;
 var nightResearchInfect;
-var sabotageButton;
+var researchButton;
 
 //End Game
 var endSection;
@@ -129,7 +130,7 @@ function variableAssignment() {
   nightInfected = document.querySelector("#night__infected");
   nightResearch = document.querySelector("#night__research");
   nightResearchInfect = document.querySelector("#night__research--infected");
-  sabotageButton = document.querySelector("#sabotage-button");
+  researchButton = document.querySelector("#research-button");
 
   //End game
   endSection = document.querySelector("#end");
@@ -188,10 +189,18 @@ function getNextPopdown(type, extraVar = null) {
       break;
     case "nightResults":
       if(extraVar) {
-        createPopdown("You've been infected!", "Continue", "closePopdown(this.parentNode)", "To win, infect 50% of the population. Avoid being caught!");
+        createPopdown("You've been infected!", "Continue", "getNextPopdown('testResults'," + testResultGlobal + ")", "To win, infect 50% of the population. Avoid being caught!");
       }
       else {
+        getNextPopdown('testResults',testResultGlobal);
+      }
+      break;
+    case "testResults":
+      if(extraVar == null) {
         closePopdown(basicPopdown);
+      }
+      else {
+        createPopdown("Test Results", "Continue", "closePopdown(this.parentNode)",(extraVar ? "The test results are positive!" : "The test results are negative."));
       }
       break;
   }
@@ -424,24 +433,25 @@ function startTimer(seconds) {
   }
 }
 
-function selectSabotage(selected) {
+function selectResearch(selected) {
   if(selected) {
-    if(sabotageButton.querySelector(".chosen") == null) {
+    if(researchButton.querySelector(".chosen") == null) {
       var span = document.createElement("span");
       span.setAttribute("class","chosen");
 
-      sabotageButton.appendChild(span);
+      researchButton.appendChild(span);
     }
   }
   else {
-    var chosen = sabotageButton.querySelector(".chosen");
+    var chosen = researchButton.querySelector(".chosen");
     if(chosen != null) {
-      sabotageButton.removeChild(chosen);
+      researchButton.removeChild(chosen);
     }
   }
 }
 
-function showNightResults(healthAdded, sickAdded, infectedAdded, slotGains, infected, cureAttempt, winCondition) {
+function showNightResults(healthAdded, sickAdded, infectedAdded, slotGains, infected, cureAttempt, testResult, winCondition) {
+  testResultGlobal = testResult;
   var cureNews = "";
   if(cureAttempt == true) {
     var cureNews = " The cure has developed!";
